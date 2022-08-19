@@ -11,6 +11,7 @@ import {
     ComponentPropType,
     useSidebarState,
 } from 'react-admin';
+import {Typography} from '@mui/material';
 
 const Root = styled("div")(({ theme }) => ({
     display: "flex",
@@ -41,6 +42,27 @@ const Content = styled("div")(({ theme }) => ({
         //paddingLeft: 5,
 }));
 
+const MyAppBar = (props) => (
+    <AppBar
+      sx={{
+          "& .RaAppBar-title": {
+              flex: 1,
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+          },
+      }}
+      {...props}
+    >
+      <Typography
+        variant="h6"
+        color="inherit"
+        id="react-admin-title">
+        MNHN Tabula
+      </Typography>
+    </AppBar>
+);
+
 export const MyLayout = ({
     children,
     dashboard,
@@ -51,7 +73,7 @@ export const MyLayout = ({
     return (
         <Root>
           <AppFrame>
-            <AppBar title={title}
+            <MyAppBar title={title}
                     open={open} />
             <ContentWithSidebar>
               <Sidebar>
