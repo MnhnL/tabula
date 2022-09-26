@@ -7,11 +7,17 @@ import { Pagination } from 'react-admin';
 import { mkReferenceInput } from './filters.js';
 
 import 'maplibre-gl/dist/maplibre-gl.css';
-import maplibregl from 'maplibre-gl';
+// eslint-disable-next-line import/no-webpack-loader-syntax
+import maplibregl from '!maplibre-gl'; // Next three lines are a hack from https://github.com/maplibre/maplibre-gl-js/issues/1011
+import maplibreglWorker from 'maplibre-gl/dist/maplibre-gl-csp-worker';
+
+
 import {Map as MapGL, Source, Layer, NavigationControl} from 'react-map-gl';
 import SpaIcon from '@mui/icons-material/Spa';
 import { parse } from 'wkt';
 import { Stack, Box, Card, CardContent, styled } from '@mui/material';
+
+maplibregl.workerClass = maplibreglWorker; // part of hack above
 
 const filters = [
     <DateInput label="Determined after" alwaysOn source="determined_at_start@gte"/>,
