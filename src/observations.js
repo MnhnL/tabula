@@ -1,8 +1,8 @@
 import * as React from "react";
 import { Datagrid, DateField, List, TextField,
          TextInput, DateInput, AutocompleteArrayInput,
-         useListContext, useListController, useGetList,
-         Loading, FilterList, FilterListItem,} from 'react-admin';
+         useListController, useGetList,
+         Loading } from 'react-admin';
 import { Pagination } from 'react-admin';
 import { mkReferenceInput } from './filters.js';
 
@@ -13,9 +13,9 @@ import maplibreglWorker from 'maplibre-gl/dist/maplibre-gl-csp-worker';
 
 
 import {Map as MapGL, Source, Layer, NavigationControl} from 'react-map-gl';
-import SpaIcon from '@mui/icons-material/Spa';
+// import SpaIcon from '@mui/icons-material/Spa';
 import { parse } from 'wkt';
-import { Stack, Box, Card, CardContent, styled } from '@mui/material';
+import { Stack } from '@mui/material';
 
 maplibregl.workerClass = maplibreglWorker; // part of hack above
 
@@ -80,7 +80,8 @@ const GeoMap = React.forwardRef(({viewState, setViewState, highlighted}, ref) =>
         resource, // the resource name, deduced from the location. e.g. 'posts'
     } = useListController();
 
-    const { data, total, isLoading, error } = useGetList(
+    // eslint-disable-next-line
+    const { data, __, isLoading, error } = useGetList(
         resource,
         {
             pagination: { page: 1, perPage: 5000 },
@@ -139,6 +140,7 @@ const Image = ({url}) => {
     if (url) {
     return (
         <div>
+          {/* eslint-disable-next-line */}
           <img src={url} />
         </div>
     );

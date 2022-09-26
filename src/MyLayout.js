@@ -1,14 +1,11 @@
 // in src/MyLayout.js
 import * as React from 'react';
-import { useEffect } from 'react';
-import { useGetList } from 'react-admin';
 import PropTypes from 'prop-types';
 import { styled } from '@mui/material';
 import {
     AppBar,
     Menu,
     Sidebar,
-    ComponentPropType,
     useSidebarState,
 } from 'react-admin';
 import {Typography} from '@mui/material';

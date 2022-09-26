@@ -1,5 +1,6 @@
+
 import * as React from "react";
-import { Admin, Resource, ListGuesser, fetchUtils } from 'react-admin';
+import { Admin, Resource, fetchUtils } from 'react-admin';
 import dataProvider from '@promitheus/ra-data-postgrest';
 
 import './App.css';
@@ -22,7 +23,7 @@ function App() {
         <Admin title="MNHN Tabula"
                layout={MyLayout}
                initialState={initialState}
-               dataProvider={dataProvider('http://potato.hisnat.local:3000',
+               dataProvider={dataProvider(process.env.REACT_APP_API_URL,
                                           fetchUtils.fetchJson,
                                           'eq',
                                           new Map([['observations_flat', ['external_id']],
