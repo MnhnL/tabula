@@ -1,7 +1,7 @@
 import * as React from "react";
 import { Datagrid, DateField, List, TextField,
          TextInput, DateInput, AutocompleteArrayInput,
-         useListController, useGetList,
+         useListController, useGetList, useListContext,
          Loading } from 'react-admin';
 import { Pagination } from 'react-admin';
 import { mkReferenceInput } from './filters.js';
@@ -11,12 +11,17 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import maplibregl from '!maplibre-gl'; // Next three lines are a hack from https://github.com/maplibre/maplibre-gl-js/issues/1011
 import maplibreglWorker from 'maplibre-gl/dist/maplibre-gl-csp-worker';
 
-
 import {Map as MapGL, Source, Layer, NavigationControl} from 'react-map-gl';
 // import SpaIcon from '@mui/icons-material/Spa';
 import { parse } from 'wkt';
 import { Stack, Autocomplete, TextField as MuiTextField,
-         FormControl, FormLabel, RadioGroup, FormControlLabel, Radio } from '@mui/material';
+         FormControl, FormLabel, RadioGroup, FormControlLabel, Radio,
+	 List as MuiList, ListItem as MuiListItem, ListItemText as MuiListItemText,
+	 IconButton, Box, Grid, Chip, Switch, FormGroup } from '@mui/material';
+
+import ClearIcon from '@mui/icons-material/Clear';
+import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
+import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline';
 
 maplibregl.workerClass = maplibreglWorker; // part of hack above
 
@@ -106,7 +111,6 @@ const GeoMap = React.forwardRef(({viewState, setViewState, highlighted, featureC
     const featureCollection = {
         type: "FeatureCollection",
         features: data.filter(r => getGeography(displayType, r)).map(r => {
-//            console.log(r.external_id, r.location_geography, r.sample_geography);
             const geo = parse(getGeography(displayType, r));
             const hi = r.external_id === highlighted;
             return {
@@ -120,8 +124,6 @@ const GeoMap = React.forwardRef(({viewState, setViewState, highlighted, featureC
             };
         })
     };
-
-    //console.log(featureCollection);
 
     return (
         <MapGL /* {...viewState} */
@@ -164,29 +166,151 @@ function isUrl(s) {
 }
 
 
-function getOptions() {
-    return [
-	{label: "foo"},
-	{label: "bar"}
-    ];
-}
-const TaxonFilter = () => {
-    const fetch = React.useMemo(
-        (request, callback ) => {
-	    // autocompleteService.current.getPlacePredictions(
-	    // 	request,
-	    // 	callback,
-	    // );
-	    return getOptions();
-        },
-	[],
-    );
+
+const TaxonItem = ({taxon, onDelete, ...props}) => {
+    const [includeTaxon, setIncludeTaxon] = React.useState(true);
+    
+    const {taxon_list_item_key, taxon_name, authority, taxon_rank,
+	   kng_name, div_name, phyl_name, cla_name, ord_name, fam_name, gen_name} = taxon;
+
+    let secondaryAction = null,
+	includeExcludeButton = null;
+    
+    // in the list
+    if (onDelete) {
+	secondaryAction = <IconButton onClick={(e) => onDelete(e, taxon)}><ClearIcon /></IconButton>;
+	includeExcludeButton = <IconButton onClick={(e) => setIncludeTaxon(!includeTaxon)}>{ includeTaxon ? <AddCircleOutlineIcon /> : <RemoveCircleOutlineIcon /> }</IconButton>;
+    }
+
+    const path = [kng_name, div_name, phyl_name, cla_name, ord_name, fam_name, gen_name].filter(t => !!t).join(" > ");
     
     return (
-	<Autocomplete
-	    options={getOptions()}
-	    renderInput={(params) => <MuiTextField {...params} label="Taxon" />}
-	/>
+	<MuiListItem {...props}
+		     key={taxon_list_item_key}
+		     secondaryAction={secondaryAction}
+		     sx={{backgroundColor: includeTaxon ? 'white': 'yellow'}}>
+	    { includeExcludeButton }
+	    <MuiListItemText secondary={path}>
+		<Box component={'span'} sx={{fontStyle: 'italic'}}>{taxon_name}</Box> {authority} <Chip label={taxon_rank} variant="outlined" size="small"/>
+	    </MuiListItemText>
+	    { onDelete &&
+	      <FormGroup>
+		  <FormControlLabel control={<Switch defaultChecked size="small" />} label="Subtaxa" />
+		  <FormControlLabel control={<Switch size="small"/>} label="Synonyms" />
+	      </FormGroup>
+	    }
+	</MuiListItem>
+    );
+}
+
+
+const TaxonFilter = ({onChange}) => {
+    const [value, setValue] = React.useState(null); // The value selected from the list
+    const [inputValue, setInputValue] = React.useState(''); // Raw value from input
+    const [options, setOptions] = React.useState([]); // The options shown in dropdown
+
+    const [selectedTaxa, setSelectedTaxa] = React.useState([]);
+
+    const fetchOptions = React.useMemo(
+	() => 
+            (request, callback ) => {
+		fetch(`http://potato.hisnat.local:3000/rpc/taxon_suggest?query=${request.input}`).then((response) => {
+		    if (!response.ok) {
+			console.error("Could not fetch from Taxa API");
+		    } else {
+			response.json().then((json) => {
+			    callback(json)
+			});
+		    }
+		});
+            },
+	[]
+    );
+
+    const {filterValues, setFilters} = useListContext();
+
+    React.useEffect(() => {
+	let active = true;
+
+	if (inputValue === '') {
+	    setOptions(value ? [value] : []);
+	    return undefined;
+	}
+
+	fetchOptions({ input: inputValue },
+		     (results) => {
+			 if (active) {
+			     let newOptions = [];
+			     
+			     if (results) {
+				 setOptions(results);
+			     }
+			 }
+		     });
+
+	return () => {
+	    active = false;
+	};
+    }, [value, inputValue, fetchOptions]);
+
+
+    // Add to filters the values in selectedTaxa
+    React.useEffect(() => {
+	const selectedTaxaTLIKs = selectedTaxa.map((t) => t.taxon_list_item_key);
+
+	if (filterValues['taxon_list_item_key@in'] && selectedTaxa.length == 0) {
+	    var dup = Object.assign({}, filterValues);
+	    delete dup['taxon_list_item_key@in'];
+	    setFilters(dup)
+	} else {
+	    setFilters({...filterValues, 'taxon_list_item_key@in': "(" + selectedTaxaTLIKs.join(',') + ")"});
+	}
+    }, [selectedTaxa]);
+    
+    return (
+	<Grid container>
+	    <Grid xs={4}>
+	    <Autocomplete
+		options={options}
+		// sx={{minWidth: "30em"}}
+		filterOptions={(x) => x}
+		autoComplete
+		value={value}
+		renderInput={(params) => <MuiTextField {...params} label="Find Taxon" fullWidth />}
+		onInputChange={(event, newInputValue) => setInputValue(newInputValue)}
+		onChange={(ev, newValue) => {
+		    setOptions([]);
+		    setInputValue('');
+		    setValue(null);
+		    setSelectedTaxa(selectedTaxa.concat([newValue]));
+		}}
+		renderOption={(props, t) => {
+		    return (<TaxonItem {...props}
+				       dense={true}
+				       key={t.taxon_list_item_key}
+				       taxon={t}
+				       onDelete={null} />
+);
+		}}
+		getOptionLabel={(option) =>
+		    typeof option === 'string' ? option : option.taxon_name
+		}
+		blurOnSelect
+	    />
+	    </Grid>
+	<Grid xs={8}>
+	    <MuiList>
+		{selectedTaxa.map(t => {
+		    return (
+			<TaxonItem dense={true}
+				   key={t.taxon_list_item_key}
+				   taxon={t}
+				   onDelete={(e, t_del) => setSelectedTaxa(selectedTaxa.filter((t) => t.taxon_list_item_key !== t_del.taxon_list_item_key))} />
+		    );
+		})}
+	    </MuiList>
+	 </Grid>
+	</Grid>
     );
 }
 
