@@ -286,17 +286,28 @@ const TaxonFilter = ({onChange}) => {
 
     // Add to filters the values in selectedTaxa
     React.useEffect(() => {
-	const selectedTaxaTLIKs = selectedTaxa.map((t) => t.taxon_list_item_key);
+	const selectedTaxaIds = selectedTaxa.map((t) => t.taxon_list_item_key);
 
-	// Remove the filter completely if not taxa selected
-	if ('taxon_list_item_key@in' in filterValues && selectedTaxa.length == 0) {
-	    var dup = Object.assign({}, filterValues);
-	    delete dup['taxon_list_item_key@in'];
-	    setFilters(dup)
+	const includedIds = selectedTaxaIds.filter(getIncludeById);
+	const excludedIds = selectedTaxaIds.filter(id => !getIncludeById(id));
+
+	var dup = Object.assign({}, filterValues);
+	const newFilters = {};
+
+	if (includedIds.length > 0) {
+	    newFilters['taxon_list_item_key@in'] = "(" + includedIds.join(',') + ")";
 	} else {
-	    setFilters({...filterValues, 'taxon_list_item_key@in': "(" + selectedTaxaTLIKs.join(',') + ")"});
+	    delete dup['taxon_list_item_key@in'];
 	}
-    }, [selectedTaxa]);
+	
+	if (excludedIds.length > 0) {
+	    newFilters['taxon_list_item_key@not.in'] = "(" + excludedIds.join(',') + ")";
+	} else {
+	    delete dup['taxon_list_item_key@not.in'];
+	}
+	    
+	setFilters({...dup, ...newFilters});
+    }, [selectedTaxa, include, includeSubtaxa, includeSynonyms]);
     
     return (
 	<Grid container>
