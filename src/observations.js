@@ -2,7 +2,7 @@ import * as React from "react";
 import { Datagrid, DateField, List, TextField,
          TextInput, DateInput, AutocompleteArrayInput,
          useListController, useGetList, useListContext,
-         Loading, FunctionField, RecordContextProvider, ShowGuesser } from 'react-admin';
+         Loading, FunctionField, RecordContextProvider, Show, SimpleShowLayout } from 'react-admin';
 import { Pagination } from 'react-admin';
 import { mkReferenceInput } from './filters.js';
 
@@ -33,13 +33,6 @@ const filters = [
     <DateInput label="Sampled before" source="sampled_at_start@lte"/>,
     // <TextInput label="Sampler" source="sampler_names@cs"/>, // Needs to put {} around names
     <TextInput label="Taxon ListItemKey" source="taxon_list_item_key@eq" />,
-    // mkReferenceInput('Species', 'spp'),
-    // mkReferenceInput('Genus', 'gen'),
-    // mkReferenceInput('Family', 'fam'),
-    // mkReferenceInput('Order', 'ord'),
-    // mkReferenceInput('Class', 'cla'),
-    // mkReferenceInput('Phylum', 'phyl'),
-    // mkReferenceInput('Kingdom', 'kng'),
     <AutocompleteArrayInput label="Data source" source="source" choices={[
         { id: 'LUXNAT', name: 'Luxnat' },
         { id: 'INAT', name: 'iNaturalist' },
@@ -105,9 +98,7 @@ const GeoMap = React.forwardRef(({viewState, setViewState, highlighted, featureC
         }
     );
 
-    // if (isLoading  || !data) { return <Loading sx={{minHeight: "300px", minWidth: "100px"}} />; }
     if (error) { return <p>ERROR</p>; }
-    console.log(data);
 
     let features = [];
     if (!isLoading && data) {
@@ -155,30 +146,40 @@ const GeoMap = React.forwardRef(({viewState, setViewState, highlighted, featureC
     );
 });
 
-function isUrl(s) {
-    return s.substring(0, 4) === 'http';
-}
-
 const Image = ({url}) => {
     if (url) {
-    return (
-        <div style={{maxWidth: 200}}>
-          {/* eslint-disable-next-line */}
-            <img style={{maxWidth: 200}} width={200} src={url} />
-        </div>
+	return (
+            <div style={{maxWidth: 200}}>
+		{/* eslint-disable-next-line */}
+		<img style={{maxWidth: 200}} width={200} src={url} />
+            </div>
     );
     } else {
         return <div>No image</div>;
     }
 };
 
-const InfoBox = ({imageUrl, record}) => {
-    //<Image url={imageUrl}/>
+const InfoBox = ({record}) => {
+    function isUrl(s) {
+	return s.substring(0, 4) === 'http';
+    }
+
+    // Image
+    let url;
+    if (record?.file_names) {
+        url = record.file_names.find(fn => isUrl(fn));
+    }
+
+    // <Image url={url}/>
 
     // return (
     // 	<div style={{width: "200px"}}>
     // 	    <RecordContextProvider value={record}>
-    // 		<ShowGuesser/>
+    // 		<Show>
+    // 		    <SimpleShowLayout>
+    // 			<TextField source="taxon_list_item_key" />
+    // 		    </SimpleShowLayout>
+    // 		</Show>
     // 	    </RecordContextProvider>
     // 	</div>
     // );
@@ -336,7 +337,7 @@ const TaxonFilter = ({onChange}) => {
 
 	const effectiveFilters = {...filterValuesDup, ...newFilters}
 
-	console.log(effectiveFilters);
+	//console.log(effectiveFilters);
 
 	setFilters(effectiveFilters);
     }, [selectedTaxa, include_, includeSubtaxa_, includeSynonyms_]);
@@ -435,7 +436,6 @@ export const ObservationList = () => {
     });
 
     const [highlighted, setHighlighted] = React.useState();
-    const [imageUrl, setImageUrl] = React.useState();
 
     const [featureCount, setFeatureCount] = React.useState('page');
     const [displayType, setDisplayType] = React.useState('centroid');
@@ -456,16 +456,6 @@ export const ObservationList = () => {
             setHighlighted(id);
 	    // FIXME: This should probably be handled one up using a callback passet to this component
             mapRef.current?.flyTo({center: center, duration: 800});
-        }
-
-        // Image
-        if (record.file_names) {
-            const url = record.file_names.find(fn => isUrl(fn));
-            if (url) {
-                setImageUrl(url);
-            } else {
-                setImageUrl(null);
-            }
         }
 
 	setLastClickedRecord(record);
@@ -507,7 +497,7 @@ export const ObservationList = () => {
         </List>
 	    </Grid>
 	    <Grid item xs={2}>
-		<InfoBox imageUrl={imageUrl} record={lastClickedRecord} />
+		<InfoBox record={lastClickedRecord} />
 	    </Grid>
 	</Grid>
     );
