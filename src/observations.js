@@ -31,14 +31,15 @@ const filters = [
     <TextInput label="External id" source="external_id"/>,
     <DateInput label="Sampled after" source="sampled_at_start@gte"/>,
     <DateInput label="Sampled before" source="sampled_at_start@lte"/>,
+    // <TextInput label="Sampler" source="sampler_names@cs"/>, // Needs to put {} around names
     <TextInput label="Taxon ListItemKey" source="taxon_list_item_key@eq" />,
-    mkReferenceInput('Species', 'spp'),
-    mkReferenceInput('Genus', 'gen'),
-    mkReferenceInput('Family', 'fam'),
-    mkReferenceInput('Order', 'ord'),
-    mkReferenceInput('Class', 'cla'),
-    mkReferenceInput('Phylum', 'phyl'),
-    mkReferenceInput('Kingdom', 'kng'),
+    // mkReferenceInput('Species', 'spp'),
+    // mkReferenceInput('Genus', 'gen'),
+    // mkReferenceInput('Family', 'fam'),
+    // mkReferenceInput('Order', 'ord'),
+    // mkReferenceInput('Class', 'cla'),
+    // mkReferenceInput('Phylum', 'phyl'),
+    // mkReferenceInput('Kingdom', 'kng'),
     <AutocompleteArrayInput label="Data source" source="source" choices={[
         { id: 'LUXNAT', name: 'Luxnat' },
         { id: 'INAT', name: 'iNaturalist' },
@@ -50,14 +51,13 @@ const filters = [
 
 const ObservationPagination = () => <Pagination rowsPerPageOptions={[10, 20, 50, 100, 1000]} />;
 
-
 // For more information on data-driven styles, see https://www.mapbox.com/help/gl-dds-ref/
 export const polygonLayer = {
     source: "observation-locations",
     type: "fill",
     paint: {
         "fill-color": ['case', ['get', 'highlighted'], '#0f0', '#000'],
-        "fill-opacity": 0.4,
+        "fill-opacity": 0.2,
         // 'fill-sort-key': 'sort',
         'fill-outline-color': '#000',
     }
@@ -68,11 +68,11 @@ export const pointLayer = {
     type: 'circle',
     filter: ["==", ["get", "type"], "Point"],
     paint: {
-        'circle-radius': ['case', ['get', 'highlighted'], 4, 4],
+        'circle-radius': ['case', ['get', 'highlighted'], 10, 6],
         'circle-color': ['case', ['get', 'highlighted'], '#0f0', '#000'],
 	'circle-stroke-width': ['case', ['get', 'highlighted'], 1, 0],
-        'circle-opacity': 0.4,
-        // 'circle-sort-key': 'sort',
+        'circle-opacity': 0.2,
+        // 'circle-sort-key': 'foo', // This is somehow broken or I don't understand how it should work
     }
 };
 
@@ -105,12 +105,13 @@ const GeoMap = React.forwardRef(({viewState, setViewState, highlighted, featureC
         }
     );
 
-    if (isLoading  || !data) { return <Loading sx={{minHeight: "300px", minWidth: "100px"}} />; }
+    // if (isLoading  || !data) { return <Loading sx={{minHeight: "300px", minWidth: "100px"}} />; }
     if (error) { return <p>ERROR</p>; }
+    console.log(data);
 
-    const featureCollection = {
-        type: "FeatureCollection",
-        features: data.filter(r => getGeography(displayType, r)).map(r => {
+    let features = [];
+    if (!isLoading && data) {
+	features = data?.filter(r => getGeography(displayType, r)).map(r => {
             const geo = parse(getGeography(displayType, r));
             const hi = r.external_id === highlighted;
             return {
@@ -119,10 +120,16 @@ const GeoMap = React.forwardRef(({viewState, setViewState, highlighted, featureC
                 properties: {
                     type: geo['type'],
                     highlighted: hi,
-                    sort: hi ? 1 : 0,
+                    //sort: hi ? 1 : 0,
+		    foo: hi ? 1 : 0,
                 }
             };
-        })
+        });
+    }
+
+    const featureCollection = {
+        type: "FeatureCollection",
+        features
     };
 
     return (
@@ -219,29 +226,29 @@ const TaxonFilter = ({onChange}) => {
 
     const [selectedTaxa, setSelectedTaxa] = React.useState([]); // The list of Taxon API objects currently selected
     
-    const [include, setInclude] = React.useState({}); // A map TaxonId -> includeTaxon
-    const [includeSubtaxa, setIncludeSubtaxa] = React.useState({}); // A map TaxonId -> includeSubtaxa
-    const [includeSynonyms, setIncludeSynonyms] = React.useState({}); // A map TaxonId -> includeSynonyms
+    const [include_, setInclude_] = React.useState({}); // A map TaxonId -> includeTaxon
+    const [includeSubtaxa_, setIncludeSubtaxa_] = React.useState({}); // A map TaxonId -> includeSubtaxa
+    const [includeSynonyms_, setIncludeSynonyms_] = React.useState({}); // A map TaxonId -> includeSynonyms
 
-    const setIncludeById = (id, value) => {
-	setInclude({...include, [id]: value});
+    const setInclude = (id, value) => {
+	setInclude_({...include_, [id]: value});
     }
-    const getIncludeById = (id) => {
-	return include[id];
-    }
-
-    const setIncludeSubtaxaById = (id, value) => {
-	setIncludeSubtaxa({...includeSubtaxa, [id]: value});
-    }
-    const getIncludeSubtaxaById = (id) => {
-	return includeSubtaxa[id];
+    const isIncluded = (id) => {
+	return include_[id];
     }
 
-    const setIncludeSynonymsById = (id, value) => {
-	setIncludeSynonyms({...includeSynonyms, [id]: value});
+    const setIncludeSubtaxa = (id, value) => {
+	setIncludeSubtaxa_({...includeSubtaxa_, [id]: value});
     }
-    const getIncludeSynonymsById = (id) => {
-	return includeSynonyms[id];
+    const includeSubtaxa = (id) => {
+	return includeSubtaxa_[id];
+    }
+
+    const setIncludeSynonyms = (id, value) => {
+	setIncludeSynonyms_({...includeSynonyms_, [id]: value});
+    }
+    const includeSynonyms = (id) => {
+	return includeSynonyms_[id];
     }
 
     
@@ -263,6 +270,7 @@ const TaxonFilter = ({onChange}) => {
 
     const {filterValues, setFilters} = useListContext();
 
+    // Applies taxon filters based on state mentionned below
     React.useEffect(() => {
 	let active = true;
 
@@ -283,31 +291,55 @@ const TaxonFilter = ({onChange}) => {
 	};
     }, [value, inputValue, fetchOptions]);
 
-
     // Add to filters the values in selectedTaxa
     React.useEffect(() => {
+	const joinList = (l) => "(" + l.join(",") + ")";
+	
 	const selectedTaxaIds = selectedTaxa.map((t) => t.taxon_list_item_key);
 
-	const includedIds = selectedTaxaIds.filter(getIncludeById);
-	const excludedIds = selectedTaxaIds.filter(id => !getIncludeById(id));
+	const includedIds = selectedTaxaIds.filter(isIncluded);
+	const excludedIds = selectedTaxaIds.filter(id => !isIncluded(id));
 
-	var dup = Object.assign({}, filterValues);
+	var filterValuesDup = Object.assign({}, filterValues);
 	const newFilters = {};
 
-	if (includedIds.length > 0) {
-	    newFilters['taxon_list_item_key@in'] = "(" + includedIds.join(',') + ")";
-	} else {
-	    delete dup['taxon_list_item_key@in'];
+	// Remove old taxon filters
+	const filterIdPrefixes = [
+	    'taxon_list_item_key',
+	    'kng_key', 'div_key', 'phyl_key',
+	    'cla_key', 'ord_key', 'fam_key',
+	    'gen_key', 'spp_key'];
+	for (let filterIdPrefix of filterIdPrefixes) {
+	    delete filterValuesDup[`${filterIdPrefix}@in`];
+	    delete filterValuesDup[`${filterIdPrefix}@not.in`];
 	}
-	
-	if (excludedIds.length > 0) {
-	    newFilters['taxon_list_item_key@not.in'] = "(" + excludedIds.join(',') + ")";
-	} else {
-	    delete dup['taxon_list_item_key@not.in'];
+
+	// Set all filters using index arrays
+	for (let st of selectedTaxa) {
+	    const id = st.taxon_list_item_key;
+	    const rank = st.taxon_rank;
+	    const filterIdPrefix = includeSubtaxa(id) ? `${rank}_key` : 'taxon_list_item_key';
+	    const filterIdOperator = isIncluded(id) ? 'in' : 'not.in';
+	    const filterId = `${filterIdPrefix}@${filterIdOperator}`;
+
+	    // Push taxon id into relevant filter, (maybe create new one)
+	    if (!(filterId in newFilters)) {
+		newFilters[filterId] = [];
+	    }
+	    newFilters[filterId].push(id);
 	}
-	    
-	setFilters({...dup, ...newFilters});
-    }, [selectedTaxa, include, includeSubtaxa, includeSynonyms]);
+
+	// Translate into format usable by API
+	for (let filterId in newFilters) {
+	    newFilters[filterId] = joinList(newFilters[filterId]);
+	}
+
+	const effectiveFilters = {...filterValuesDup, ...newFilters}
+
+	console.log(effectiveFilters);
+
+	setFilters(effectiveFilters);
+    }, [selectedTaxa, include_, includeSubtaxa_, includeSynonyms_]);
     
     return (
 	<Grid container>
@@ -327,9 +359,9 @@ const TaxonFilter = ({onChange}) => {
 
 			// Set options
 			const tlik = newSelectedTaxon.taxon_list_item_key;
-			setIncludeById(tlik, true);
-			setIncludeSubtaxaById(tlik, true);
-			setIncludeSynonymsById(tlik, true);
+			setInclude(tlik, true);
+			setIncludeSubtaxa(tlik, true);
+			setIncludeSynonyms(tlik, true);
 
 			// Append taxon object returend from API to selected taxa list
 			const newSelectedTaxa = selectedTaxa.concat([newSelectedTaxon])
@@ -358,12 +390,12 @@ const TaxonFilter = ({onChange}) => {
 			    <TaxonItem taxon={t}
 				       dense={true}
 				       key={t.taxon_list_item_key}
-				       includeTaxon={getIncludeById(t.taxon_list_item_key)}
-				       setIncludeTaxon={setIncludeById}
-				       includeSubtaxa={getIncludeSubtaxaById(t.taxon_list_item_key)}
-				       setIncludeSubtaxa={setIncludeSubtaxaById}
-				       includeSynonyms={getIncludeSynonymsById(t.taxon_list_item_key)}
-				       setIncludeSynonyms={setIncludeSynonymsById}
+				       includeTaxon={isIncluded(t.taxon_list_item_key)}
+				       setIncludeTaxon={setInclude}
+				       includeSubtaxa={includeSubtaxa(t.taxon_list_item_key)}
+				       setIncludeSubtaxa={setIncludeSubtaxa}
+				       includeSynonyms={includeSynonyms(t.taxon_list_item_key)}
+				       setIncludeSynonyms={setIncludeSynonyms}
 				       onDelete={(e, t_del) => setSelectedTaxa(selectedTaxa.filter((t) => t.taxon_list_item_key !== t_del.taxon_list_item_key))} />
 			);
 		    })}
@@ -462,9 +494,12 @@ export const ObservationList = () => {
 			    displayType={displayType} />
 		</Stack>
                <Datagrid rowClick={postRowClick}>
-		   <TextField source="taxon_name"
-                              sx={{ display: 'inline-block', maxWidth: '20em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} />
-		   <FunctionField label="Samplers" render={(r) => r.sampler_names.join(', ')} />
+
+		   <FunctionField label="Taxon"
+				  render={(r) => <TaxonItem taxon={{taxon_name: r.taxon_name, authority: r.authority, taxon_rank: r.taxon_rank}}
+							    includeTaxon={true}
+							    onDelete={null} />} />
+		   <FunctionField label="Samplers" render={(r) => r.sampler_names?.join(', ')} />
 		   <DateField source="sampled_at_end" />
 		   <TextField source="source" />
               </Datagrid>
@@ -477,3 +512,5 @@ export const ObservationList = () => {
 	</Grid>
     );
 }
+// <TextField source="taxon_name"
+//            sx={{ display: 'inline-block', maxWidth: '20em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} />
