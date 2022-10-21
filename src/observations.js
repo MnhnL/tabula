@@ -186,7 +186,13 @@ const InfoBox = ({record}) => {
     return null;
 }
 
-const TaxonItem = ({taxon, includeTaxon, setIncludeTaxon, includeSubtaxa, setIncludeSubtaxa, includeSynonyms, setIncludeSynonyms, onDelete, ...props}) => {
+
+// TODO: Clean up a bit 
+const TaxonItem = ({taxon,
+		    includeTaxon, setIncludeTaxon,
+		    includeSubtaxa, setIncludeSubtaxa,
+		    includeSynonyms, setIncludeSynonyms,
+		    onDelete, ...props}) => {
     const {taxon_list_item_key, taxon_name, authority, taxon_rank,
 	   kng_name, div_name, phyl_name, cla_name, ord_name, fam_name, gen_name} = taxon;
 
@@ -306,7 +312,7 @@ const TaxonFilter = ({onChange}) => {
 
 	// Remove old taxon filters
 	const filterIdPrefixes = [
-	    'taxon_list_item_key',
+	    'taxon_list_item_key', 'preferred_taxon_list_item_key',
 	    'kng_key', 'div_key', 'phyl_key',
 	    'cla_key', 'ord_key', 'fam_key',
 	    'gen_key', 'spp_key'];
@@ -317,17 +323,36 @@ const TaxonFilter = ({onChange}) => {
 
 	// Set all filters using index arrays
 	for (let st of selectedTaxa) {
-	    const id = st.taxon_list_item_key;
+	    let id = st.taxon_list_item_key;
+
+	    // The one we filter for
+	    let targetId;
+	    if (includeSynonyms(id)) {
+		targetId = st.preferred_taxon_list_item_key;
+	    } else {
+		targetId = st.taxon_list_item_key;
+	    }
+	    
 	    const rank = st.taxon_rank;
-	    const filterIdPrefix = includeSubtaxa(id) ? `${rank}_key` : 'taxon_list_item_key';
-	    const filterIdOperator = isIncluded(id) ? 'in' : 'not.in';
+
+	    let filterIdPrefix;
+	    if (includeSubtaxa(id)) {
+		filterIdPrefix = `${rank}_key`;
+	    } else if (includeSynonyms(id)) {
+		filterIdPrefix = 'preferred_taxon_list_item_key';
+	    } else {
+		filterIdPrefix = 'taxon_list_item_key';
+	    }
+
+	    const filterIdOperator = isIncluded(id) || includeSynonyms(id) ? 'in' : 'not.in';
+
 	    const filterId = `${filterIdPrefix}@${filterIdOperator}`;
 
 	    // Push taxon id into relevant filter, (maybe create new one)
 	    if (!(filterId in newFilters)) {
 		newFilters[filterId] = [];
 	    }
-	    newFilters[filterId].push(id);
+	    newFilters[filterId].push(targetId);
 	}
 
 	// Translate into format usable by API
