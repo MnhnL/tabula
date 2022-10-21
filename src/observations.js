@@ -2,7 +2,7 @@ import * as React from "react";
 import { Datagrid, DateField, List, TextField,
          TextInput, DateInput, AutocompleteArrayInput,
          useListController, useGetList, useListContext,
-         Loading } from 'react-admin';
+         Loading, FunctionField, RecordContextProvider, ShowGuesser } from 'react-admin';
 import { Pagination } from 'react-admin';
 import { mkReferenceInput } from './filters.js';
 
@@ -17,21 +17,21 @@ import { parse } from 'wkt';
 import { Stack, Autocomplete, TextField as MuiTextField,
          FormControl, FormLabel, RadioGroup, FormControlLabel, Radio,
 	 List as MuiList, ListItem as MuiListItem, ListItemText as MuiListItemText,
-	 IconButton, Box, Grid, Chip, Switch, FormGroup } from '@mui/material';
+	 IconButton, Box, Grid, Chip, Switch, FormGroup, ToggleButtonGroup, ToggleButton, Tooltip } from '@mui/material';
 
 import ClearIcon from '@mui/icons-material/Clear';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline';
+import ListIcon from '@mui/icons-material/List';
+import OneKIcon from '@mui/icons-material/OneK';
 
 maplibregl.workerClass = maplibreglWorker; // part of hack above
 
 const filters = [
-    <TextInput label="External id" alwaysOn source="external_id"/>,
-    <DateInput label="Sampled after" alwaysOn source="sampled_at_start@gte"/>,
-    <DateInput label="Sampled before" alwaysOn source="sampled_at_start@lte"/>,
-    <TextInput label="Determiner name" source="determiner_name@ilike" />,
-    <TextInput label="Taxon ListItemKey" source="taxon_list_item_key@eq" alwaysOn />,
-    <TextInput label="Taxon Name" source="taxon_name@ilike" alwaysOn />,
+    <TextInput label="External id" source="external_id"/>,
+    <DateInput label="Sampled after" source="sampled_at_start@gte"/>,
+    <DateInput label="Sampled before" source="sampled_at_start@lte"/>,
+    <TextInput label="Taxon ListItemKey" source="taxon_list_item_key@eq" />,
     mkReferenceInput('Species', 'spp'),
     mkReferenceInput('Genus', 'gen'),
     mkReferenceInput('Family', 'fam'),
@@ -105,7 +105,7 @@ const GeoMap = React.forwardRef(({viewState, setViewState, highlighted, featureC
         }
     );
 
-    if (isLoading  || !data) { return <Loading />; }
+    if (isLoading  || !data) { return <Loading sx={{minHeight: "300px", minWidth: "100px"}} />; }
     if (error) { return <p>ERROR</p>; }
 
     const featureCollection = {
@@ -148,12 +148,16 @@ const GeoMap = React.forwardRef(({viewState, setViewState, highlighted, featureC
     );
 });
 
+function isUrl(s) {
+    return s.substring(0, 4) === 'http';
+}
+
 const Image = ({url}) => {
     if (url) {
     return (
-        <div>
+        <div style={{maxWidth: 200}}>
           {/* eslint-disable-next-line */}
-          <img src={url} />
+            <img style={{maxWidth: 200}} width={200} src={url} />
         </div>
     );
     } else {
@@ -161,15 +165,20 @@ const Image = ({url}) => {
     }
 };
 
-function isUrl(s) {
-    return s.substring(0, 4) === 'http';
+const InfoBox = ({imageUrl, record}) => {
+    //<Image url={imageUrl}/>
+
+    // return (
+    // 	<div style={{width: "200px"}}>
+    // 	    <RecordContextProvider value={record}>
+    // 		<ShowGuesser/>
+    // 	    </RecordContextProvider>
+    // 	</div>
+    // );
+    return null;
 }
 
-
-
-const TaxonItem = ({taxon, onDelete, ...props}) => {
-    const [includeTaxon, setIncludeTaxon] = React.useState(true);
-    
+const TaxonItem = ({taxon, includeTaxon, setIncludeTaxon, includeSubtaxa, setIncludeSubtaxa, includeSynonyms, setIncludeSynonyms, onDelete, ...props}) => {
     const {taxon_list_item_key, taxon_name, authority, taxon_rank,
 	   kng_name, div_name, phyl_name, cla_name, ord_name, fam_name, gen_name} = taxon;
 
@@ -179,7 +188,7 @@ const TaxonItem = ({taxon, onDelete, ...props}) => {
     // in the list
     if (onDelete) {
 	secondaryAction = <IconButton onClick={(e) => onDelete(e, taxon)}><ClearIcon /></IconButton>;
-	includeExcludeButton = <IconButton onClick={(e) => setIncludeTaxon(!includeTaxon)}>{ includeTaxon ? <AddCircleOutlineIcon /> : <RemoveCircleOutlineIcon /> }</IconButton>;
+	includeExcludeButton = <IconButton onClick={(e) => setIncludeTaxon(taxon_list_item_key, !includeTaxon)}>{ includeTaxon ? <AddCircleOutlineIcon /> : <RemoveCircleOutlineIcon /> }</IconButton>;
     }
 
     const path = [kng_name, div_name, phyl_name, cla_name, ord_name, fam_name, gen_name].filter(t => !!t).join(" > ");
@@ -195,22 +204,47 @@ const TaxonItem = ({taxon, onDelete, ...props}) => {
 	    </MuiListItemText>
 	    { onDelete &&
 	      <FormGroup>
-		  <FormControlLabel control={<Switch defaultChecked size="small" />} label="Subtaxa" />
-		  <FormControlLabel control={<Switch size="small"/>} label="Synonyms" />
+		  <FormControlLabel control={<Switch size="small" checked={includeSubtaxa} onChange={(e) => setIncludeSubtaxa(taxon_list_item_key, !includeSubtaxa)} />} label="Subtaxa" />
+		  <FormControlLabel control={<Switch size="small" checked={includeSynonyms} onChange={(e) => setIncludeSynonyms(taxon_list_item_key, !includeSynonyms)}/>} label="Synonyms" />
 	      </FormGroup>
 	    }
 	</MuiListItem>
     );
 }
 
-
 const TaxonFilter = ({onChange}) => {
     const [value, setValue] = React.useState(null); // The value selected from the list
     const [inputValue, setInputValue] = React.useState(''); // Raw value from input
     const [options, setOptions] = React.useState([]); // The options shown in dropdown
 
-    const [selectedTaxa, setSelectedTaxa] = React.useState([]);
+    const [selectedTaxa, setSelectedTaxa] = React.useState([]); // The list of Taxon API objects currently selected
+    
+    const [include, setInclude] = React.useState({}); // A map TaxonId -> includeTaxon
+    const [includeSubtaxa, setIncludeSubtaxa] = React.useState({}); // A map TaxonId -> includeSubtaxa
+    const [includeSynonyms, setIncludeSynonyms] = React.useState({}); // A map TaxonId -> includeSynonyms
 
+    const setIncludeById = (id, value) => {
+	setInclude({...include, [id]: value});
+    }
+    const getIncludeById = (id) => {
+	return include[id];
+    }
+
+    const setIncludeSubtaxaById = (id, value) => {
+	setIncludeSubtaxa({...includeSubtaxa, [id]: value});
+    }
+    const getIncludeSubtaxaById = (id) => {
+	return includeSubtaxa[id];
+    }
+
+    const setIncludeSynonymsById = (id, value) => {
+	setIncludeSynonyms({...includeSynonyms, [id]: value});
+    }
+    const getIncludeSynonymsById = (id) => {
+	return includeSynonyms[id];
+    }
+
+    
     const fetchOptions = React.useMemo(
 	() => 
             (request, callback ) => {
@@ -239,12 +273,8 @@ const TaxonFilter = ({onChange}) => {
 
 	fetchOptions({ input: inputValue },
 		     (results) => {
-			 if (active) {
-			     let newOptions = [];
-			     
-			     if (results) {
-				 setOptions(results);
-			     }
+			 if (active && results) {
+			     setOptions(results);
 			 }
 		     });
 
@@ -258,7 +288,8 @@ const TaxonFilter = ({onChange}) => {
     React.useEffect(() => {
 	const selectedTaxaTLIKs = selectedTaxa.map((t) => t.taxon_list_item_key);
 
-	if (filterValues['taxon_list_item_key@in'] && selectedTaxa.length == 0) {
+	// Remove the filter completely if not taxa selected
+	if ('taxon_list_item_key@in' in filterValues && selectedTaxa.length == 0) {
 	    var dup = Object.assign({}, filterValues);
 	    delete dup['taxon_list_item_key@in'];
 	    setFilters(dup)
@@ -269,47 +300,64 @@ const TaxonFilter = ({onChange}) => {
     
     return (
 	<Grid container>
-	    <Grid xs={4}>
-	    <Autocomplete
-		options={options}
-		// sx={{minWidth: "30em"}}
-		filterOptions={(x) => x}
-		autoComplete
-		value={value}
-		renderInput={(params) => <MuiTextField {...params} label="Find Taxon" fullWidth />}
-		onInputChange={(event, newInputValue) => setInputValue(newInputValue)}
-		onChange={(ev, newValue) => {
-		    setOptions([]);
-		    setInputValue('');
-		    setValue(null);
-		    setSelectedTaxa(selectedTaxa.concat([newValue]));
-		}}
-		renderOption={(props, t) => {
-		    return (<TaxonItem {...props}
+	    <Grid item xs={4}>
+		<Autocomplete
+		    options={options}
+		    // sx={{minWidth: "30em"}}
+		    filterOptions={(x) => x}
+		    autoComplete
+		    value={value}
+		    renderInput={(params) => <MuiTextField {...params} label="Find Taxon" fullWidth />}
+		    onInputChange={(event, newInputValue) => setInputValue(newInputValue)}
+		    onChange={(ev, newSelectedTaxon) => {
+			setOptions([]);
+			setInputValue('');
+			setValue(null);
+
+			// Set options
+			const tlik = newSelectedTaxon.taxon_list_item_key;
+			setIncludeById(tlik, true);
+			setIncludeSubtaxaById(tlik, true);
+			setIncludeSynonymsById(tlik, true);
+
+			// Append taxon object returend from API to selected taxa list
+			const newSelectedTaxa = selectedTaxa.concat([newSelectedTaxon])
+			setSelectedTaxa(newSelectedTaxa);
+
+		    }}
+		    renderOption={(props, t) => {
+			return (<TaxonItem {...props}
+					   dense={true}
+					   key={t.taxon_list_item_key}
+					   includeTaxon={true}
+					   taxon={t}
+					   onDelete={null} />
+			       );
+		    }}
+		    getOptionLabel={(option) =>
+			typeof option === 'string' ? option : option.taxon_name
+		    }
+		    blurOnSelect
+		/>
+	    </Grid>
+	    <Grid item xs={8}>
+		<MuiList>
+		    {selectedTaxa.map(t => {
+			return (
+			    <TaxonItem taxon={t}
 				       dense={true}
 				       key={t.taxon_list_item_key}
-				       taxon={t}
-				       onDelete={null} />
-);
-		}}
-		getOptionLabel={(option) =>
-		    typeof option === 'string' ? option : option.taxon_name
-		}
-		blurOnSelect
-	    />
+				       includeTaxon={getIncludeById(t.taxon_list_item_key)}
+				       setIncludeTaxon={setIncludeById}
+				       includeSubtaxa={getIncludeSubtaxaById(t.taxon_list_item_key)}
+				       setIncludeSubtaxa={setIncludeSubtaxaById}
+				       includeSynonyms={getIncludeSynonymsById(t.taxon_list_item_key)}
+				       setIncludeSynonyms={setIncludeSynonymsById}
+				       onDelete={(e, t_del) => setSelectedTaxa(selectedTaxa.filter((t) => t.taxon_list_item_key !== t_del.taxon_list_item_key))} />
+			);
+		    })}
+		</MuiList>
 	    </Grid>
-	<Grid xs={8}>
-	    <MuiList>
-		{selectedTaxa.map(t => {
-		    return (
-			<TaxonItem dense={true}
-				   key={t.taxon_list_item_key}
-				   taxon={t}
-				   onDelete={(e, t_del) => setSelectedTaxa(selectedTaxa.filter((t) => t.taxon_list_item_key !== t_del.taxon_list_item_key))} />
-		    );
-		})}
-	    </MuiList>
-	 </Grid>
 	</Grid>
     );
 }
@@ -317,31 +365,21 @@ const TaxonFilter = ({onChange}) => {
 const MapOptions = ({onFeatureCountChange, featureCount,
 		     onDisplayTypeChange, displayType}) => {
     return (
-	<Stack direction="row">
-	    <FormControl>
-		<FormLabel>Observations on map</FormLabel>
-		<RadioGroup
-		    row
-		    aria-labelledby="demo-radio-buttons-group-label"
-		    defaultValue="page"
-		    value={featureCount}
-	            onChange={(e) => onFeatureCountChange(e.target.value)}>
-		    <FormControlLabel value="page" control={<Radio />} label="This page" />
-		    <FormControlLabel value="1000" control={<Radio />} label="First 1000 results" />
-		</RadioGroup>
-	    </FormControl>
-	    <FormControl>
-		<FormLabel>Display observation as</FormLabel>
-		<RadioGroup
-		    row
-		    aria-labelledby="demo-radio-buttons-group-label"
-		    defaultValue="page"
-		    value={displayType}
-	            onChange={(e) => onDisplayTypeChange(e.target.value)}>
-		    <FormControlLabel value="centroid" control={<Radio />} label="Center" />
-		    <FormControlLabel value="polygon" control={<Radio />} label="Polygon" />
-		</RadioGroup>
-	    </FormControl>
+	<Stack spacing={2}>
+	    <ToggleButtonGroup value={featureCount}
+			       onChange={(e, value) => onFeatureCountChange(value)}
+			       orientation="vertical"
+			       size="small" exclusive>
+		<ToggleButton value="page" key="page">Pag</ToggleButton>
+		<ToggleButton value="1000" key="1000">1k</ToggleButton>
+	    </ToggleButtonGroup>
+	    <ToggleButtonGroup value={displayType}
+			       onChange={(e, value) => onDisplayTypeChange(value)}
+			       orientation="vertical"
+			       size="small" exclusive>
+		<ToggleButton value="centroid" key="centroid">Cent</ToggleButton>
+		<ToggleButton value="polygon" key="polygon">Poly</ToggleButton>
+	    </ToggleButtonGroup>
 	</Stack>
 );
 }
@@ -358,6 +396,8 @@ export const ObservationList = () => {
 
     const [featureCount, setFeatureCount] = React.useState('page');
     const [displayType, setDisplayType] = React.useState('centroid');
+
+    const [lastClickedRecord, setLastClickedRecord] = React.useState();
 
     const mapRef = React.useRef();
 
@@ -385,35 +425,44 @@ export const ObservationList = () => {
             }
         }
 
+	setLastClickedRecord(record);
+
         return null;
     };
 
     return (
+	<Grid container>
+	    <Grid item xs={8}>
         <List filters={filters}
-              pagination={<ObservationPagination />}
-              aside={<Image url={imageUrl}/>}>
-            <Stack spacing={2}>
-		<MapOptions onFeatureCountChange={setFeatureCount}
-			    featureCount={featureCount}
-			    onDisplayTypeChange={setDisplayType}
-			    displayType={displayType} />
+              pagination={<ObservationPagination />}>
+            <Stack spacing={2} sx={{paddingLeft: 1}}>
 		<TaxonFilter />
-		<GeoMap viewState={viewState}
-			setViewState={setViewState}
-			highlighted={highlighted}
-			ref={mapRef}
-			featureCount={featureCount}
-			displayType={displayType} />
+		<Stack direction="row"
+		       spacing={1} >
+		    <MapOptions onFeatureCountChange={setFeatureCount}
+				featureCount={featureCount}
+				onDisplayTypeChange={setDisplayType}
+				displayType={displayType} />
+		    <GeoMap viewState={viewState}
+			    setViewState={setViewState}
+			    highlighted={highlighted}
+			    ref={mapRef}
+			    featureCount={featureCount}
+			    displayType={displayType} />
+		</Stack>
                <Datagrid rowClick={postRowClick}>
-		   <TextField source="id" />
 		   <TextField source="taxon_name"
                               sx={{ display: 'inline-block', maxWidth: '20em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} />
-		   <TextField source="sampler_names" />
+		   <FunctionField label="Samplers" render={(r) => r.sampler_names.join(', ')} />
 		   <DateField source="sampled_at_end" />
 		   <TextField source="source" />
-              {/* <TextField source="geography" sx={{ display: 'inline-block', maxWidth: '20em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} /> */}
               </Datagrid>
            </Stack>
         </List>
+	    </Grid>
+	    <Grid item xs={2}>
+		<InfoBox imageUrl={imageUrl} record={lastClickedRecord} />
+	    </Grid>
+	</Grid>
     );
 }
