@@ -2,23 +2,16 @@ import * as React from "react";
 import { Datagrid, DateField, List, TextField,
          TextInput, DateInput, AutocompleteArrayInput,
          useListController, useGetList, useListContext,
-         Loading, FunctionField, RecordContextProvider, Show, SimpleShowLayout } from 'react-admin';
+         Loading, FunctionField, RecordContextProvider,
+	 Show, SimpleShowLayout } from 'react-admin';
 import { Pagination } from 'react-admin';
-import { mkReferenceInput } from './filters.js';
 import { useMapState } from 'react-use-object-state';
 
-import 'maplibre-gl/dist/maplibre-gl.css';
-// eslint-disable-next-line import/no-webpack-loader-syntax
-import maplibregl from '!maplibre-gl'; // Next three lines are a hack from https://github.com/maplibre/maplibre-gl-js/issues/1011
-import maplibreglWorker from 'maplibre-gl/dist/maplibre-gl-csp-worker';
-
-import {Map as MapGL, Source, Layer, NavigationControl} from 'react-map-gl';
-// import SpaIcon from '@mui/icons-material/Spa';
-import { parse } from 'wkt';
 import { Stack, Autocomplete, TextField as MuiTextField,
          FormControl, FormLabel, RadioGroup, FormControlLabel, Radio,
 	 List as MuiList, ListItem as MuiListItem, ListItemText as MuiListItemText,
-	 IconButton, Box, Grid, Chip, Switch, FormGroup, ToggleButtonGroup, ToggleButton, Tooltip } from '@mui/material';
+	 IconButton, Box, Grid, Chip, Switch, FormGroup, ToggleButtonGroup, ToggleButton,
+	 Card, Tooltip } from '@mui/material';
 
 import ClearIcon from '@mui/icons-material/Clear';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
@@ -26,7 +19,8 @@ import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline';
 import ListIcon from '@mui/icons-material/List';
 import OneKIcon from '@mui/icons-material/OneK';
 
-maplibregl.workerClass = maplibreglWorker; // part of hack above
+import { GeoMap, getGeography } from './map.js';
+import { parse } from 'wkt';
 
 const filters = [
     <TextInput label="External id" source="external_id"/>,
@@ -44,109 +38,6 @@ const filters = [
 
 
 const ObservationPagination = () => <Pagination rowsPerPageOptions={[10, 20, 50, 100, 1000]} />;
-
-// For more information on data-driven styles, see https://www.mapbox.com/help/gl-dds-ref/
-export const polygonLayer = {
-    source: "observation-locations",
-    type: "fill",
-    paint: {
-        "fill-color": ['case', ['get', 'highlighted'], '#0f0', '#000'],
-        "fill-opacity": 0.2,
-        // 'fill-sort-key': 'sort',
-        'fill-outline-color': '#000',
-    }
-};
-
-export const pointLayer = {
-    source: "observation-locations",
-    type: 'circle',
-    filter: ["==", ["get", "type"], "Point"],
-    paint: {
-        'circle-radius': ['case', ['get', 'highlighted'], 10, 6],
-        'circle-color': ['case', ['get', 'highlighted'], '#0f0', '#000'],
-	'circle-stroke-width': ['case', ['get', 'highlighted'], 1, 0],
-        'circle-opacity': 0.2,
-        // 'circle-sort-key': 'foo', // This is somehow broken or I don't understand how it should work
-    }
-};
-
-function getGeography(displayType, record) {
-    if (displayType === 'polygon') {
-	return record.location_geography || record.sample_geography;
-    } else {
-	return record.location_geography_centroid || record.sample_geography_centroid;
-    }
-}
-
-const GeoMap = React.forwardRef(({viewState, setViewState, highlighted, featureCount, displayType}, ref) => {
-    // const { data, isLoading  } = useListContext();
-
-    const {
-        sort, // a sort object { field, order }, e.g. { field: 'date', order: 'DESC' }
-        filterValues, // a dictionary of filter values, e.g. { title: 'lorem', nationality: 'fr' }
-        resource, // the resource name, deduced from the location. e.g. 'posts'
-	page, // Current page
-	perPage, 
-    } = useListController();
-
-    // eslint-disable-next-line
-    const { data, __, isLoading, error } = useGetList(
-        resource,
-        {
-            pagination: { page: featureCount === 'page' ? page : 1, perPage: featureCount === 'page' ? perPage : '1000' },
-            sort,
-            filter: filterValues
-        }
-    );
-
-    if (error) { return <p>ERROR</p>; }
-
-    let features = [];
-    if (!isLoading && data) {
-	features = data?.filter(r => getGeography(displayType, r)).map(r => {
-            const geo = parse(getGeography(displayType, r));
-            const hi = r.external_id === highlighted;
-            return {
-                type: "Feature",
-                geometry: geo,
-                properties: {
-                    type: geo['type'],
-                    highlighted: hi,
-                    //sort: hi ? 1 : 0,
-		    foo: hi ? 1 : 0,
-                }
-            };
-        });
-    }
-
-    const featureCollection = {
-        type: "FeatureCollection",
-        features
-    };
-
-    return (
-        <MapGL /* {...viewState} */
-        /* onMove={evt => setViewState(evt.viewState)} */
-               initialViewState={{
-                   longitude: 6.08,
-                   latitude: 49.72,
-                   zoom: 8
-               }}
-               mapLib={maplibregl}
-               style={{minHeight: "300px", minWidth: "100px"}}
-               mapStyle="https://api.maptiler.com/maps/topo/style.json?key=Y9b4FjkTykQU3UX9Qx1O"
-               ref={ref}>
-          <NavigationControl />
-          <Source id="observation-locations"
-                  type="geojson"
-                  data={featureCollection} >
-            <Layer {...polygonLayer}/>
-            <Layer {...pointLayer}/>
-          </Source>
-        </MapGL>
-    );
-});
-
 const Image = ({url}) => {
     if (url) {
 	return (
@@ -184,11 +75,10 @@ const InfoBox = ({record}) => {
     // 	    </RecordContextProvider>
     // 	</div>
     // );
-    return null;
+    return <Card>Hello</Card>;
 }
 
 
-// TODO: Clean up a bit
 const TaxonItem = ({taxon,
 		    includeTaxon,
 		    includeSubtaxa,
@@ -221,12 +111,21 @@ const TaxonItem = ({taxon,
 		     sx={{backgroundColor: include ? 'white': 'yellow'}}>
 	    { includeExcludeButton }
 	    <MuiListItemText secondary={path}>
-		<Box component={'span'} sx={{fontStyle: 'italic'}}>{taxon_name}</Box> {authority} <Chip label={taxon_rank} variant="outlined" size="small"/>
+		<Box component={'span'}
+		     sx={{fontStyle: 'italic'}}>
+		    {taxon_name}
+		</Box> {authority} <Chip label={taxon_rank} variant="outlined" size="small"/>
 	    </MuiListItemText>
 	    { !displayOnly &&
 	      <FormGroup>
-		  <FormControlLabel control={<Switch size="small" checked={includeSubtaxa.state.get(taxon_list_item_key)} onChange={(e) => includeSubtaxa.set(taxon_list_item_key, !includeSubtaxa.state.get(taxon_list_item_key))} />} label="Subtaxa" />
-		  <FormControlLabel control={<Switch size="small" checked={includeSynonyms.state.get(taxon_list_item_key)} onChange={(e) => includeSynonyms.set(taxon_list_item_key, !includeSynonyms.state.get(taxon_list_item_key))}/>} label="Synonyms" />
+		  <FormControlLabel control={<Switch size="small"
+						     checked={includeSubtaxa.state.get(taxon_list_item_key)}
+						     onChange={(e) => includeSubtaxa.set(taxon_list_item_key, !includeSubtaxa.state.get(taxon_list_item_key))} />}
+				    label="Subtaxa" />
+		  <FormControlLabel control={<Switch size="small"
+						     checked={includeSynonyms.state.get(taxon_list_item_key)}
+						     onChange={(e) => includeSynonyms.set(taxon_list_item_key, !includeSynonyms.state.get(taxon_list_item_key))}/>}
+				    label="Synonyms" />
 	      </FormGroup>
 	    }
 	</MuiListItem>
@@ -477,7 +376,7 @@ export const ObservationList = () => {
 	    <Grid item xs={8}>
         <List filters={filters}
               pagination={<ObservationPagination />}>
-            <Stack spacing={2} sx={{paddingLeft: 1}}>
+            <Stack spacing={2} sx={{paddingLeft: 1, height: "100%"}}>
 		<TaxonFilter />
 		<Stack direction="row"
 		       spacing={1} >
@@ -492,7 +391,7 @@ export const ObservationList = () => {
 			    featureCount={featureCount}
 			    displayType={displayType} />
 		</Stack>
-               <Datagrid rowClick={postRowClick}>
+		<Datagrid rowClick={postRowClick} sx={{overflowY: "scroll", height: "40vh"}}>
 		   <FunctionField label="Taxon"
 				  render={(r) => <TaxonItem taxon={{taxon_name: r.taxon_name, authority: r.authority, taxon_rank: r.taxon_rank}}
 							    displayOnly={true} />} />
