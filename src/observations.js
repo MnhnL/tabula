@@ -5,6 +5,7 @@ import { Datagrid, DateField, List, TextField,
          Loading, FunctionField, RecordContextProvider, Show, SimpleShowLayout } from 'react-admin';
 import { Pagination } from 'react-admin';
 import { mkReferenceInput } from './filters.js';
+import { useMapState } from 'react-use-object-state';
 
 import 'maplibre-gl/dist/maplibre-gl.css';
 // eslint-disable-next-line import/no-webpack-loader-syntax
@@ -187,22 +188,28 @@ const InfoBox = ({record}) => {
 }
 
 
-// TODO: Clean up a bit 
+// TODO: Clean up a bit
 const TaxonItem = ({taxon,
-		    includeTaxon, setIncludeTaxon,
-		    includeSubtaxa, setIncludeSubtaxa,
-		    includeSynonyms, setIncludeSynonyms,
-		    onDelete, ...props}) => {
+		    includeTaxon,
+		    includeSubtaxa,
+		    includeSynonyms,
+		    onDelete,
+		    displayOnly = false,
+		    ...props}) => {
     const {taxon_list_item_key, taxon_name, authority, taxon_rank,
 	   kng_name, div_name, phyl_name, cla_name, ord_name, fam_name, gen_name} = taxon;
+
+    let include = true;
 
     let secondaryAction = null,
 	includeExcludeButton = null;
     
     // in the list
-    if (onDelete) {
+    if (!displayOnly) {
+        include = includeTaxon.state.get(taxon.taxon_list_item_key);
+
 	secondaryAction = <IconButton onClick={(e) => onDelete(e, taxon)}><ClearIcon /></IconButton>;
-	includeExcludeButton = <IconButton onClick={(e) => setIncludeTaxon(taxon_list_item_key, !includeTaxon)}>{ includeTaxon ? <AddCircleOutlineIcon /> : <RemoveCircleOutlineIcon /> }</IconButton>;
+	includeExcludeButton = <IconButton onClick={(e) => includeTaxon.set(taxon_list_item_key, !include)}>{ include ? <AddCircleOutlineIcon /> : <RemoveCircleOutlineIcon /> }</IconButton>;
     }
 
     const path = [kng_name, div_name, phyl_name, cla_name, ord_name, fam_name, gen_name].filter(t => !!t).join(" > ");
@@ -211,15 +218,15 @@ const TaxonItem = ({taxon,
 	<MuiListItem {...props}
 		     key={taxon_list_item_key}
 		     secondaryAction={secondaryAction}
-		     sx={{backgroundColor: includeTaxon ? 'white': 'yellow'}}>
+		     sx={{backgroundColor: include ? 'white': 'yellow'}}>
 	    { includeExcludeButton }
 	    <MuiListItemText secondary={path}>
 		<Box component={'span'} sx={{fontStyle: 'italic'}}>{taxon_name}</Box> {authority} <Chip label={taxon_rank} variant="outlined" size="small"/>
 	    </MuiListItemText>
-	    { onDelete &&
+	    { !displayOnly &&
 	      <FormGroup>
-		  <FormControlLabel control={<Switch size="small" checked={includeSubtaxa} onChange={(e) => setIncludeSubtaxa(taxon_list_item_key, !includeSubtaxa)} />} label="Subtaxa" />
-		  <FormControlLabel control={<Switch size="small" checked={includeSynonyms} onChange={(e) => setIncludeSynonyms(taxon_list_item_key, !includeSynonyms)}/>} label="Synonyms" />
+		  <FormControlLabel control={<Switch size="small" checked={includeSubtaxa.state.get(taxon_list_item_key)} onChange={(e) => includeSubtaxa.set(taxon_list_item_key, !includeSubtaxa.state.get(taxon_list_item_key))} />} label="Subtaxa" />
+		  <FormControlLabel control={<Switch size="small" checked={includeSynonyms.state.get(taxon_list_item_key)} onChange={(e) => includeSynonyms.set(taxon_list_item_key, !includeSynonyms.state.get(taxon_list_item_key))}/>} label="Synonyms" />
 	      </FormGroup>
 	    }
 	</MuiListItem>
@@ -233,32 +240,11 @@ const TaxonFilter = ({onChange}) => {
 
     const [selectedTaxa, setSelectedTaxa] = React.useState([]); // The list of Taxon API objects currently selected
     
-    const [include_, setInclude_] = React.useState({}); // A map TaxonId -> includeTaxon
-    const [includeSubtaxa_, setIncludeSubtaxa_] = React.useState({}); // A map TaxonId -> includeSubtaxa
-    const [includeSynonyms_, setIncludeSynonyms_] = React.useState({}); // A map TaxonId -> includeSynonyms
+    // const [include_, setInclude_] = React.useState({}); // A map TaxonId -> includeTaxon
+    const include = useMapState();
+    const includeSubtaxa = useMapState();  // A map TaxonId -> includeSubtaxa
+    const includeSynonyms = useMapState() // A map TaxonId -> includeSynonyms
 
-    const setInclude = (id, value) => {
-	setInclude_({...include_, [id]: value});
-    }
-    const isIncluded = (id) => {
-	return include_[id];
-    }
-
-    const setIncludeSubtaxa = (id, value) => {
-	setIncludeSubtaxa_({...includeSubtaxa_, [id]: value});
-    }
-    const includeSubtaxa = (id) => {
-	return includeSubtaxa_[id];
-    }
-
-    const setIncludeSynonyms = (id, value) => {
-	setIncludeSynonyms_({...includeSynonyms_, [id]: value});
-    }
-    const includeSynonyms = (id) => {
-	return includeSynonyms_[id];
-    }
-
-    
     const fetchOptions = React.useMemo(
 	() => 
             (request, callback ) => {
@@ -304,8 +290,8 @@ const TaxonFilter = ({onChange}) => {
 	
 	const selectedTaxaIds = selectedTaxa.map((t) => t.taxon_list_item_key);
 
-	const includedIds = selectedTaxaIds.filter(isIncluded);
-	const excludedIds = selectedTaxaIds.filter(id => !isIncluded(id));
+	const includedIds = selectedTaxaIds.filter(id => include.state.get(id));
+	const excludedIds = selectedTaxaIds.filter(id => !include.state.get(id));
 
 	var filterValuesDup = Object.assign({}, filterValues);
 	const newFilters = {};
@@ -327,7 +313,7 @@ const TaxonFilter = ({onChange}) => {
 
 	    // The one we filter for
 	    let targetId;
-	    if (includeSynonyms(id)) {
+	    if (includeSynonyms.state.get(id)) {
 		targetId = st.preferred_taxon_list_item_key;
 	    } else {
 		targetId = st.taxon_list_item_key;
@@ -336,15 +322,15 @@ const TaxonFilter = ({onChange}) => {
 	    const rank = st.taxon_rank;
 
 	    let filterIdPrefix;
-	    if (includeSubtaxa(id)) {
+	    if (includeSubtaxa.state.get(id)) {
 		filterIdPrefix = `${rank}_key`;
-	    } else if (includeSynonyms(id)) {
+	    } else if (includeSynonyms.state.get(id)) {
 		filterIdPrefix = 'preferred_taxon_list_item_key';
 	    } else {
 		filterIdPrefix = 'taxon_list_item_key';
 	    }
 
-	    const filterIdOperator = isIncluded(id) || includeSynonyms(id) ? 'in' : 'not.in';
+	    const filterIdOperator = include.state.get(id) || includeSynonyms.state.get(id) ? 'in' : 'not.in';
 
 	    const filterId = `${filterIdPrefix}@${filterIdOperator}`;
 
@@ -365,7 +351,7 @@ const TaxonFilter = ({onChange}) => {
 	//console.log(effectiveFilters);
 
 	setFilters(effectiveFilters);
-    }, [selectedTaxa, include_, includeSubtaxa_, includeSynonyms_]);
+    }, [selectedTaxa, include, includeSubtaxa, includeSynonyms]);
     
     return (
 	<Grid container>
@@ -385,9 +371,9 @@ const TaxonFilter = ({onChange}) => {
 
 			// Set options
 			const tlik = newSelectedTaxon.taxon_list_item_key;
-			setInclude(tlik, true);
-			setIncludeSubtaxa(tlik, true);
-			setIncludeSynonyms(tlik, true);
+			include.set(tlik, true);
+			includeSubtaxa.set(tlik, true);
+			includeSynonyms.set(tlik, true);
 
 			// Append taxon object returend from API to selected taxa list
 			const newSelectedTaxa = selectedTaxa.concat([newSelectedTaxon])
@@ -396,11 +382,11 @@ const TaxonFilter = ({onChange}) => {
 		    }}
 		    renderOption={(props, t) => {
 			return (<TaxonItem {...props}
+					   taxon={t}
 					   dense={true}
 					   key={t.taxon_list_item_key}
-					   includeTaxon={true}
-					   taxon={t}
-					   onDelete={null} />
+					   includeTaxon={include}
+					   displayOnly={true} />
 			       );
 		    }}
 		    getOptionLabel={(option) =>
@@ -416,13 +402,11 @@ const TaxonFilter = ({onChange}) => {
 			    <TaxonItem taxon={t}
 				       dense={true}
 				       key={t.taxon_list_item_key}
-				       includeTaxon={isIncluded(t.taxon_list_item_key)}
-				       setIncludeTaxon={setInclude}
-				       includeSubtaxa={includeSubtaxa(t.taxon_list_item_key)}
-				       setIncludeSubtaxa={setIncludeSubtaxa}
-				       includeSynonyms={includeSynonyms(t.taxon_list_item_key)}
-				       setIncludeSynonyms={setIncludeSynonyms}
-				       onDelete={(e, t_del) => setSelectedTaxa(selectedTaxa.filter((t) => t.taxon_list_item_key !== t_del.taxon_list_item_key))} />
+				       includeTaxon={include}
+				       includeSubtaxa={includeSubtaxa}
+				       includeSynonyms={includeSynonyms}
+				       onDelete={(e, t_del) => setSelectedTaxa(selectedTaxa.filter((t) => t.taxon_list_item_key !== t_del.taxon_list_item_key))}
+			               displayOnly={false}/>
 			);
 		    })}
 		</MuiList>
@@ -509,11 +493,9 @@ export const ObservationList = () => {
 			    displayType={displayType} />
 		</Stack>
                <Datagrid rowClick={postRowClick}>
-
 		   <FunctionField label="Taxon"
 				  render={(r) => <TaxonItem taxon={{taxon_name: r.taxon_name, authority: r.authority, taxon_rank: r.taxon_rank}}
-							    includeTaxon={true}
-							    onDelete={null} />} />
+							    displayOnly={true} />} />
 		   <FunctionField label="Samplers" render={(r) => r.sampler_names?.join(', ')} />
 		   <DateField source="sampled_at_end" />
 		   <TextField source="source" />
