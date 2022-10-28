@@ -84,6 +84,7 @@ export const GeoMap = React.forwardRef(({viewState, setViewState, highlighted, f
                 }
             };
         });
+	
     }
 
     const featureCollection = {
@@ -100,7 +101,7 @@ export const GeoMap = React.forwardRef(({viewState, setViewState, highlighted, f
                    zoom: 8
                }}
                mapLib={maplibregl}
-               style={{minHeight: "300px", minWidth: "100px"}}
+               style={{height: 300}}
                mapStyle="https://api.maptiler.com/maps/topo/style.json?key=Y9b4FjkTykQU3UX9Qx1O"
                ref={ref}>
           <NavigationControl />

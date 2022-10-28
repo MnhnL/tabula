@@ -14,6 +14,77 @@ import { IndividualsList } from './individuals.js';
 import { TaxaList } from './taxa.js';
 import { MyLayout } from './MyLayout.js';
 
+const theme = {
+    spacing: 2,
+  components: {
+    MuiButton: {
+      defaultProps: {
+        size: 'small',
+      },
+    },
+    MuiFilledInput: {
+      defaultProps: {
+        margin: 'dense',
+      },
+    },
+    MuiFormControl: {
+      defaultProps: {
+        margin: 'dense',
+      },
+    },
+    MuiFormHelperText: {
+      defaultProps: {
+        margin: 'dense',
+      },
+    },
+    MuiIconButton: {
+      defaultProps: {
+        size: 'small',
+      },
+    },
+    MuiInputBase: {
+      defaultProps: {
+        margin: 'dense',
+      },
+    },	
+    MuiInputLabel: {
+      defaultProps: {
+        margin: 'dense',
+      },
+    },
+    MuiListItem: {
+      defaultProps: {
+        dense: true,
+      },
+    },
+    MuiOutlinedInput: {
+      defaultProps: {
+        margin: 'dense',
+      },
+    },
+    MuiFab: {
+      defaultProps: {
+        size: 'small',
+      },
+    },
+    MuiTable: {
+      defaultProps: {
+        size: 'small',
+      },
+    },
+    MuiTextField: {
+      defaultProps: {
+        margin: 'dense',
+      },
+    },
+    MuiToolbar: {
+      defaultProps: {
+        variant: 'dense',
+      },
+    },
+  },
+};
+
 const initialState = {
     admin: { ui: { sidebarOpen: false, viewVersion: 0 } }
 };
@@ -22,6 +93,7 @@ function App() {
     return (
         <Admin title="MNHN Tabula"
                layout={MyLayout}
+	       theme={theme}
                initialState={initialState}
                dataProvider={dataProvider(process.env.REACT_APP_API_URL,
                                           fetchUtils.fetchJson,
