@@ -1,5 +1,6 @@
 import * as React from "react";
 import { useGetList, useListController } from 'react-admin';
+import { Stack, ToggleButtonGroup, ToggleButton } from '@mui/material';
 
 import 'maplibre-gl/dist/maplibre-gl.css';
 // eslint-disable-next-line import/no-webpack-loader-syntax
@@ -43,6 +44,29 @@ export function getGeography(displayType, record) {
     } else {
 	return record.location_geography_centroid || record.sample_geography_centroid;
     }
+}
+
+export const MapOptions = ({onFeatureCountChange, featureCount,
+			    onDisplayTypeChange, displayType}) =>
+{
+    return (
+	<Stack spacing={2}>
+	    <ToggleButtonGroup value={featureCount}
+			       onChange={(e, value) => onFeatureCountChange(value)}
+			       orientation="vertical"
+			       size="small" exclusive>
+		<ToggleButton value="page" key="page">Pag</ToggleButton>
+		<ToggleButton value="1000" key="1000">1k</ToggleButton>
+	    </ToggleButtonGroup>
+	    <ToggleButtonGroup value={displayType}
+			       onChange={(e, value) => onDisplayTypeChange(value)}
+			       orientation="vertical"
+			       size="small" exclusive>
+		<ToggleButton value="centroid" key="centroid">Cent</ToggleButton>
+		<ToggleButton value="polygon" key="polygon">Poly</ToggleButton>
+	    </ToggleButtonGroup>
+	</Stack>
+    );
 }
 
 export const GeoMap = React.forwardRef(({viewState, setViewState, highlighted, featureCount, displayType}, ref) => {

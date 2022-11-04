@@ -1,6 +1,5 @@
 // in src/MyLayout.js
 import * as React from 'react';
-import PropTypes from 'prop-types';
 import { styled } from '@mui/material';
 import {
     AppBar,
@@ -40,22 +39,12 @@ const Content = styled("div")(({ theme }) => ({
 }));
 
 const MyAppBar = (props) => (
-    <AppBar
-      sx={{
-          "& .RaAppBar-title": {
-              flex: 1,
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-              overflow: "hidden",
-          },
-      }}
-      {...props}
-    >
+    <AppBar {...props} >
       <Typography
-        variant="h6"
+          variant="h6"
         color="inherit"
         id="react-admin-title">
-        MNHN Tabula
+          MNHN Tabula
       </Typography>
     </AppBar>
 );
@@ -71,10 +60,11 @@ export const MyLayout = ({
         <Root>
           <AppFrame>
             <MyAppBar title={title}
-                    open={open} />
+                      open={open} />
             <ContentWithSidebar>
               <Sidebar>
-                <Menu style={{marginTop: 50}} hasDashboard={!!dashboard} />
+                  <Menu style={{marginTop: 50}}
+			hasDashboard={!!dashboard} />
               </Sidebar>
               <Content>
                 {children}
@@ -83,13 +73,4 @@ export const MyLayout = ({
           </AppFrame>
         </Root>
     );
-};
-
-MyLayout.propTypes = {
-    children: PropTypes.oneOfType([PropTypes.func, PropTypes.node]),
-    dashboard: PropTypes.oneOfType([
-        PropTypes.func,
-        PropTypes.string,
-    ]),
-    title: PropTypes.string.isRequired,
 };

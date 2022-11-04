@@ -1,31 +1,23 @@
 import * as React from 'react';
 import { Datagrid, DateField, List, TextField,
          TextInput, DateInput, AutocompleteArrayInput,
-         useListController, useGetList,
-         Loading, FunctionField, RecordContextProvider,
-	 Show, SimpleShowLayout } from 'react-admin';
+         FunctionField } from 'react-admin';
 import { Pagination } from 'react-admin';
 
-import { Stack,
-         FormControl, FormLabel, RadioGroup, FormControlLabel, Radio,
-	 Grid, Box, FormGroup, ToggleButtonGroup, ToggleButton,
-	 Card, Tooltip, InputAdornment } from '@mui/material';
-import ListIcon from '@mui/icons-material/List';
-import OneKIcon from '@mui/icons-material/OneK';
-import AccountTreeIcon from '@mui/icons-material/AccountTree';
+import { Stack, Grid, Card } from '@mui/material';
 
 import { ReflexContainer, ReflexSplitter, ReflexElement }  from 'react-reflex';
 import 'react-reflex/styles.css';
 
-import { GeoMap, getGeography } from './map.js';
+import { GeoMap, MapOptions, getGeography } from './map.js';
 import { TaxonItem, TaxonFilter } from './taxon.js';
 
 import { parse } from 'wkt';
 
 const filters = [
     <TextInput label="External id" source="external_id"/>,
-    <DateInput label="Sampled after" source="sampled_at_start@gte"/>,
-    <DateInput label="Sampled before" source="sampled_at_start@lte"/>,
+    // <DateInput label="Sampled after" source="sampled_at_start@gte"/>,
+    // <DateInput label="Sampled before" source="sampled_at_start@lte"/>,
     // <TextInput label="Sampler" source="sampler_names@cs"/>, // Needs to put {} around names
     <TextInput label="Taxon ListItemKey" source="taxon_list_item_key@eq" />,
     <AutocompleteArrayInput label="Data source" source="source" choices={[
@@ -77,28 +69,6 @@ const InfoBox = ({record}) => {
     return <Card>Hello</Card>;
 }
 
-const MapOptions = ({onFeatureCountChange, featureCount,
-		     onDisplayTypeChange, displayType}) => {
-    return (
-	<Stack spacing={2}>
-	    <ToggleButtonGroup value={featureCount}
-			       onChange={(e, value) => onFeatureCountChange(value)}
-			       orientation="vertical"
-			       size="small" exclusive>
-		<ToggleButton value="page" key="page">Pag</ToggleButton>
-		<ToggleButton value="1000" key="1000">1k</ToggleButton>
-	    </ToggleButtonGroup>
-	    <ToggleButtonGroup value={displayType}
-			       onChange={(e, value) => onDisplayTypeChange(value)}
-			       orientation="vertical"
-			       size="small" exclusive>
-		<ToggleButton value="centroid" key="centroid">Cent</ToggleButton>
-		<ToggleButton value="polygon" key="polygon">Poly</ToggleButton>
-	    </ToggleButtonGroup>
-	</Stack>
-);
-}
-
 export const ObservationList = () => {
     const [viewState, setViewState] = React.useState({
         longitude: 6.08,
@@ -134,9 +104,9 @@ export const ObservationList = () => {
         return null;
     };
 
-    React.useEffect(() => {
-	mapRef.current?.resize();
-    }, []);
+    // React.useEffect(() => {
+    // 	mapRef.current?.resize();
+    // }, []);
 
     return (
 	<Grid container>
@@ -165,7 +135,7 @@ export const ObservationList = () => {
 			    <ReflexElement>
 				<Datagrid rowClick={postRowClick} sx={{overflowY: "scroll", height: "40vh"}}>
 				    <FunctionField label="Taxon"
-						   render={(r) => <TaxonItem taxon={{taxon_name: r.taxon_name, authority: r.authority, taxon_rank: r.taxon_rank}}
+						   render={(r) => <TaxonItem taxon={r}
 									     displayOnly={true} />} />
 				    <FunctionField label="Samplers" render={(r) => r.sampler_names?.join(', ')} />
 				    <DateField source="sampled_at_end" />
@@ -182,5 +152,3 @@ export const ObservationList = () => {
 	</Grid>
     );
 }
-// <TextField source="taxon_name"
-//            sx={{ display: 'inline-block', maxWidth: '20em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} />

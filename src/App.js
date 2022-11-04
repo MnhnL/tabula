@@ -98,19 +98,22 @@ function App() {
                dataProvider={dataProvider(process.env.REACT_APP_API_URL,
                                           fetchUtils.fetchJson,
                                           'eq',
-                                          new Map([['observations_flat', ['external_id']],
-                                                   ['individuals', ['name_key']],
-                                                   ['taxa', ['taxon_list_item_key']]]))}
+                                          new Map([['observation_flat', ['external_id']],
+                                                   ['individual', ['name_key']],
+                                                   ['taxon', ['key']]]))}
                disableTelemetry>
-          <Resource name="observations_flat"
+          <Resource name="observation_flat"
                     list={ObservationList}
                     icon={SpaIcon}
-                    options={{label: 'Observations'}}/>
-          <Resource name="taxa"
+                    options={{label: 'Observations'}}
+		    style={{height: '100%'}}
+	  />
+          <Resource name="taxon"
                     list={TaxaList}
                     icon={AccountTreeIcon}
                     options={{label: 'Taxa'}}/>
-          <Resource name="individuals" list={IndividualsList}
+          <Resource name="individual"
+		    list={IndividualsList}
                     icon={PersonIcon}/>
         </Admin>
     );

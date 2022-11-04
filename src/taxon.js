@@ -1,11 +1,14 @@
 import * as React from 'react';
 
+import 'lodash.product';
+import _ from 'lodash';
+
 import { IconButton,
          Grid, Chip, Box,
 	 FormControlLabel, FormGroup,
 	 Switch, 
 	 List as MuiList, ListItem as MuiListItem, ListItemText as MuiListItemText,
-	 Autocomplete, TextField as MuiTextField from '@mui/material';
+	 Autocomplete, TextField as MuiTextField } from '@mui/material';
 import { useListContext } from 'react-admin';
 
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
@@ -37,7 +40,8 @@ export const TaxonItem = ({taxon,
 	includeExcludeButton = <IconButton onClick={(e) => includeTaxon.set(taxon_list_item_key, !include)}>{ include ? <AddCircleOutlineIcon /> : <RemoveCircleOutlineIcon /> }</IconButton>;
     }
 
-    const path = [kng_name, div_name, phyl_name, cla_name, ord_name, fam_name, gen_name].filter(t => !!t).join(" > ");
+    const path = [kng_name, div_name, phyl_name, cla_name,
+		  ord_name, fam_name, gen_name].filter(t => !!t).join(" > ");
     
     return (
 	<MuiListItem {...props}
@@ -82,13 +86,12 @@ export const TaxonFilter = ({onChange}) => {
 
     const [selectedTaxa, setSelectedTaxa] = React.useState([]); // The list of Taxon API objects currently selected
     
-    // const [include_, setInclude_] = React.useState({}); // A map TaxonId -> includeTaxon
     const include = useMapState();
     const includeSubtaxa = useMapState();  // A map TaxonId -> includeSubtaxa
     const includeSynonyms = useMapState() // A map TaxonId -> includeSynonyms
 
     const fetchOptions = React.useMemo(
-	() => 
+	() => _.throttle(
             (request, callback ) => {
 		fetch(`http://potato.hisnat.local:3000/rpc/taxon_suggest?query=${request.input}`).then((response) => {
 		    if (!response.ok) {
@@ -99,7 +102,7 @@ export const TaxonFilter = ({onChange}) => {
 			});
 		    }
 		});
-            },
+            }, 500),
 	[]
     );
 
@@ -130,23 +133,21 @@ export const TaxonFilter = ({onChange}) => {
     React.useEffect(() => {
 	const joinList = (l) => "(" + l.join(",") + ")";
 	
-	const selectedTaxaIds = selectedTaxa.map((t) => t.taxon_list_item_key);
-
-	const includedIds = selectedTaxaIds.filter(id => include.state.get(id));
-	const excludedIds = selectedTaxaIds.filter(id => !include.state.get(id));
-
 	var filterValuesDup = Object.assign({}, filterValues);
 	const newFilters = {};
 
 	// Remove old taxon filters
 	const filterIdPrefixes = [
-	    'taxon_list_item_key', 'preferred_taxon_list_item_key',
+	    'key',
 	    'kng_key', 'div_key', 'phyl_key',
 	    'cla_key', 'ord_key', 'fam_key',
 	    'gen_key', 'spp_key'];
+
 	for (let filterIdPrefix of filterIdPrefixes) {
 	    delete filterValuesDup[`${filterIdPrefix}@in`];
 	    delete filterValuesDup[`${filterIdPrefix}@not.in`];
+	    delete filterValuesDup[`preferred_${filterIdPrefix}@in`];
+	    delete filterValuesDup[`preferred_${filterIdPrefix}@not.in`];
 	}
 
 	// Set all filters using index arrays
@@ -156,9 +157,9 @@ export const TaxonFilter = ({onChange}) => {
 	    // The one we filter for
 	    let targetId;
 	    if (includeSynonyms.state.get(id)) {
-		targetId = st.preferred_taxon_list_item_key;
+		targetId = st.preferred_key;
 	    } else {
-		targetId = st.taxon_list_item_key;
+		targetId = st.key;
 	    }
 	    
 	    const rank = st.taxon_rank;
@@ -167,10 +168,10 @@ export const TaxonFilter = ({onChange}) => {
 	    if (includeSubtaxa.state.get(id)) {
 		filterIdPrefix = `${rank}_key`;
 	    } else {
-		filterIdPrefix = 'taxon_list_item_key';
+		filterIdPrefix = 'key';
 	    }
 
-	    // Search via preferred_${rank}_key or preferred_taxon_list_item_key
+	    // Search via preferred_${rank}_key or preferred_key
 	    if (includeSynonyms.state.get(id)) {
 		filterIdPrefix = 'preferred_' + filterIdPrefix;
 	    }
@@ -193,10 +194,9 @@ export const TaxonFilter = ({onChange}) => {
 
 	const effectiveFilters = {...filterValuesDup, ...newFilters}
 
-	//console.log(effectiveFilters);
-
+	console.log(effectiveFilters);
 	setFilters(effectiveFilters);
-    }, [selectedTaxa, include, includeSubtaxa, includeSynonyms]);
+    }, [include.state, includeSubtaxa.state, includeSynonyms.state, filterValues]);
     
     return (
 	<Grid container>
