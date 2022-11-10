@@ -1,6 +1,7 @@
 
 import * as React from "react";
-import { Admin, Resource, fetchUtils } from 'react-admin';
+import { Admin, Resource, fetchUtils, defaultTheme } from 'react-admin';
+
 import dataProvider from '@promitheus/ra-data-postgrest';
 
 import './App.css';
@@ -15,74 +16,76 @@ import { TaxaList } from './taxa.js';
 import { MyLayout } from './MyLayout.js';
 
 const theme = {
+    ...defaultTheme,
     spacing: 2,
-  components: {
-    MuiButton: {
-      defaultProps: {
-        size: 'small',
-      },
+    components: {
+	...defaultTheme.components,
+	// MuiButton: {
+	//     defaultProps: {
+	// 	size: 'small',
+	//     },
+	// },
+	// MuiFilledInput: {
+	//     defaultProps: {
+	// 	margin: 'dense',
+	//     },
+	// },
+	// MuiFormControl: {
+	//     defaultProps: {
+	// 	margin: 'dense',
+	//     },
+	// },
+	// MuiFormHelperText: {
+	//     defaultProps: {
+	// 	margin: 'dense',
+	//     },
+	// },
+	// MuiIconButton: {
+	//     defaultProps: {
+	// 	size: 'small',
+	//     },
+	// },
+	// MuiInputBase: {
+	//     defaultProps: {
+	// 	margin: 'dense',
+	//     },
+	// },	
+	// MuiInputLabel: {
+	//     defaultProps: {
+	// 	margin: 'dense',
+	//     },
+	// },
+	// MuiListItem: {
+	//     defaultProps: {
+	// 	dense: true,
+	//     },
+	// },
+	// MuiOutlinedInput: {
+	//     defaultProps: {
+	// 	margin: 'dense',
+	//     },
+	// },
+	// MuiFab: {
+	//     defaultProps: {
+	// 	size: 'small',
+	//     },
+	// },
+	// MuiTable: {
+	//     defaultProps: {
+	// 	size: 'small',
+	//     },
+	// },
+	// MuiTextField: {
+	//     defaultProps: {
+	// 	margin: 'dense',
+	//     },
+	// },
+	// MuiToolbar: {
+	//     defaultProps: {
+	// 	variant: 'dense',
+	//     },
+	// },
     },
-    MuiFilledInput: {
-      defaultProps: {
-        margin: 'dense',
-      },
-    },
-    MuiFormControl: {
-      defaultProps: {
-        margin: 'dense',
-      },
-    },
-    MuiFormHelperText: {
-      defaultProps: {
-        margin: 'dense',
-      },
-    },
-    MuiIconButton: {
-      defaultProps: {
-        size: 'small',
-      },
-    },
-    MuiInputBase: {
-      defaultProps: {
-        margin: 'dense',
-      },
-    },	
-    MuiInputLabel: {
-      defaultProps: {
-        margin: 'dense',
-      },
-    },
-    MuiListItem: {
-      defaultProps: {
-        dense: true,
-      },
-    },
-    MuiOutlinedInput: {
-      defaultProps: {
-        margin: 'dense',
-      },
-    },
-    MuiFab: {
-      defaultProps: {
-        size: 'small',
-      },
-    },
-    MuiTable: {
-      defaultProps: {
-        size: 'small',
-      },
-    },
-    MuiTextField: {
-      defaultProps: {
-        margin: 'dense',
-      },
-    },
-    MuiToolbar: {
-      defaultProps: {
-        variant: 'dense',
-      },
-    },
-  },
 };
 
 const initialState = {
@@ -91,7 +94,7 @@ const initialState = {
 
 function App() {
     return (
-        <Admin title="MNHN Tabula"
+        <Admin title="MNHN Tabula - "
                layout={MyLayout}
 	       theme={theme}
                initialState={initialState}
@@ -105,16 +108,14 @@ function App() {
           <Resource name="observation_flat"
                     list={ObservationList}
                     icon={SpaIcon}
-                    options={{label: 'Observations'}}
-		    style={{height: '100%'}}
-	  />
+                    options={{label: 'Observations'}} />
           <Resource name="taxon"
                     list={TaxaList}
                     icon={AccountTreeIcon}
-                    options={{label: 'Taxa'}}/>
+                    options={{label: 'Taxa'}} />
           <Resource name="individual"
 		    list={IndividualsList}
-                    icon={PersonIcon}/>
+                    icon={PersonIcon} />
         </Admin>
     );
 }

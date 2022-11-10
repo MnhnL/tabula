@@ -1,13 +1,12 @@
 // in src/MyLayout.js
 import * as React from 'react';
-import { styled } from '@mui/material';
 import {
-    AppBar,
     Menu,
     Sidebar,
     useSidebarState,
+    AppBar,
 } from 'react-admin';
-import {Typography} from '@mui/material';
+import { styled } from '@mui/material';
 
 const Root = styled("div")(({ theme }) => ({
     display: "flex",
@@ -22,6 +21,7 @@ const AppFrame = styled("div")(({ theme }) => ({
     display: "flex",
     flexDirection: "column",
     overflowX: "auto",
+    height: "100vh",
 }));
 
 const ContentWithSidebar = styled("main")(({ theme }) => ({
@@ -35,42 +35,27 @@ const Content = styled("div")(({ theme }) => ({
     flexGrow: 2,
     // padding: theme.spacing(3),
     marginTop: "2.9em",
-        //paddingLeft: 5,
+    //paddingLeft: 5,
+    height: "calc(100vh - 2.9em)",
 }));
 
-const MyAppBar = (props) => (
-    <AppBar {...props} >
-      <Typography
-          variant="h6"
-        color="inherit"
-        id="react-admin-title">
-          MNHN Tabula
-      </Typography>
-    </AppBar>
-);
-
-export const MyLayout = ({
-    children,
-    dashboard,
-    title,
-}) => {
+export const MyLayout = (props) => {
     const [open] = useSidebarState();
 
     return (
         <Root>
-          <AppFrame>
-            <MyAppBar title={title}
-                      open={open} />
-            <ContentWithSidebar>
-              <Sidebar>
-                  <Menu style={{marginTop: 50}}
-			hasDashboard={!!dashboard} />
-              </Sidebar>
-              <Content>
-                {children}
-              </Content>
-            </ContentWithSidebar>
-          </AppFrame>
+            <AppFrame>
+		<AppBar open={props.open} />
+		<ContentWithSidebar>
+		    <Sidebar sx={{maxWidth: "10em"}}>
+			<Menu style={{marginTop: 50}}
+			      hasDashboard={!!props.dashboard} />
+		    </Sidebar>
+		    <Content>
+			{props.children}
+		    </Content>
+		</ContentWithSidebar>
+            </AppFrame>
         </Root>
     );
 };

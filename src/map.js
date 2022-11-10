@@ -1,5 +1,4 @@
 import * as React from "react";
-import { useGetList, useListController } from 'react-admin';
 import { Stack, ToggleButtonGroup, ToggleButton } from '@mui/material';
 
 import 'maplibre-gl/dist/maplibre-gl.css';
@@ -34,7 +33,7 @@ export const pointLayer = {
         'circle-color': ['case', ['get', 'highlighted'], '#0f0', '#000'],
 	'circle-stroke-width': ['case', ['get', 'highlighted'], 1, 0],
         'circle-opacity': 0.2,
-        // 'circle-sort-key': 'foo', // This is somehow broken or I don't understand how it should work
+        //'circle-sort-key': 'sort', // This is somehow broken or I don't understand how it should work
     }
 };
 
@@ -47,8 +46,7 @@ export function getGeography(displayType, record) {
 }
 
 export const MapOptions = ({onFeatureCountChange, featureCount,
-			    onDisplayTypeChange, displayType}) =>
-{
+			    onDisplayTypeChange, displayType}) => {
     return (
 	<Stack spacing={2}>
 	    <ToggleButtonGroup value={featureCount}
@@ -69,27 +67,10 @@ export const MapOptions = ({onFeatureCountChange, featureCount,
     );
 }
 
-export const GeoMap = React.forwardRef(({viewState, setViewState, highlighted, featureCount, displayType}, ref) => {
-    // const { data, isLoading  } = useListContext();
-
-    const {
-        sort, // a sort object { field, order }, e.g. { field: 'date', order: 'DESC' }
-        filterValues, // a dictionary of filter values, e.g. { title: 'lorem', nationality: 'fr' }
-        resource, // the resource name, deduced from the location. e.g. 'posts'
-	page, // Current page
-	perPage, 
-    } = useListController();
-
-    // eslint-disable-next-line
-    const { data, __, isLoading, error } = useGetList(
-        resource,
-        {
-            pagination: { page: featureCount === 'page' ? page : 1, perPage: featureCount === 'page' ? perPage : '1000' },
-            sort,
-            filter: filterValues
-        }
-    );
-
+export const GeoMap = React.forwardRef(({viewState, setViewState,
+					 highlighted,
+					 featureCount, displayType,
+					 data, isLoading, error}, ref) => {
     if (error) { return <p>ERROR</p>; }
 
     let features = [];
@@ -103,12 +84,10 @@ export const GeoMap = React.forwardRef(({viewState, setViewState, highlighted, f
                 properties: {
                     type: geo['type'],
                     highlighted: hi,
-                    //sort: hi ? 1 : 0,
-		    foo: hi ? 1 : 0,
+                    sort: hi ? 1 : 0,
                 }
             };
         });
-	
     }
 
     const featureCollection = {
@@ -117,23 +96,23 @@ export const GeoMap = React.forwardRef(({viewState, setViewState, highlighted, f
     };
 
     return (
-        <MapGL /* {...viewState} */
-        /* onMove={evt => setViewState(evt.viewState)} */
+        <MapGL //{...viewState}
+               // onMove={evt => setViewState(evt.viewState)}
                initialViewState={{
                    longitude: 6.08,
                    latitude: 49.72,
                    zoom: 8
                }}
                mapLib={maplibregl}
-               style={{height: 300}}
+               style={{height: 320}}
                mapStyle="https://api.maptiler.com/maps/topo/style.json?key=Y9b4FjkTykQU3UX9Qx1O"
-               ref={ref}>
+               ref={ref} >
           <NavigationControl />
           <Source id="observation-locations"
                   type="geojson"
                   data={featureCollection} >
-            <Layer {...polygonLayer}/>
-            <Layer {...pointLayer}/>
+              <Layer {...polygonLayer}/>
+	      <Layer {...pointLayer}/>
           </Source>
         </MapGL>
     );
