@@ -186,8 +186,8 @@ const InsideList = () => {
 		<FunctionField label="Taxon"
  			       render={(r) => <TaxonItem taxon={r}
  							 displayOnly={true} />} />
-		<FunctionField label="Entered by" render={(r) => r.entered_name} />
-		<FunctionField label="Determined by" render={(r) => r.determined_name} />
+		<FunctionField label="Entered by" render={(r) => r.entered_by_name} />
+		<FunctionField label="Determined by" render={(r) => r.determined_by_name} />
 		<TextField source="source" />
 	    </Datagrid>
 	</Stack>
