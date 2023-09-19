@@ -14,9 +14,9 @@ export function mkReferenceInput(label, col, alwaysOn=false) {
                                optionText="taxon_name"
                                optionValue="taxon_name" />
             </ReferenceInput>,
-            <TextInput label={`${col} Key`} source={`${col}_key@ilike`} />,
-	    <TextInput label={`Parent ${col} Key`} source={`parent_${col}_key@ilike`} />,
-	    <TextInput label={`Preferred ${col} Key`} source={`preferred_${col}_key@ilike`} />,
+            <TextInput label={`${col} internal ID`} source={`${col}_internal_id@ilike`} />,
+	    <TextInput label={`Parent ${col} internal ID`} source={`parent_${col}_internal_id@ilike`} />,
+	    <TextInput label={`Preferred ${col} internal ID`} source={`preferred_${col}_internal_id@ilike`} />,
     ];
 }
 

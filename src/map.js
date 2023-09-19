@@ -77,7 +77,7 @@ export const GeoMap = React.forwardRef(({viewState, setViewState,
     if (!isLoading && data) {
 	features = data?.filter(r => getGeography(displayType, r)).map(r => {
             const geo = parse(getGeography(displayType, r));
-            const hi = r.external_id === highlighted;
+            const hi = r.internal_id === highlighted;
             return {
                 type: "Feature",
                 geometry: geo,

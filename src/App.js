@@ -101,7 +101,7 @@ function App() {
                dataProvider={dataProvider(process.env.REACT_APP_API_URL,
                                           fetchUtils.fetchJson,
                                           'eq',
-                                          new Map([['observation_flat', ['external_id']],
+                                          new Map([['observation_flat', ['internal_id']],
                                                    ['individual', ['name_key']],
                                                    ['taxon', ['key']]]))}
                disableTelemetry>

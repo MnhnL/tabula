@@ -22,17 +22,16 @@ import { format }  from 'date-fns';
 // };
 
 const filters = [
-    <TextInput label="External id" source="external_id"/>,
-    <DateInput label="Sampled after" source="sampled_at_end@gte" alwaysOn />,
-    <TextInput label="Sampled at start" source="sampled_at_start@eq" />,
-    <DateInput label="Sampled before" source="sampled_at_start@lte" alwaysOn />,
+    <TextInput label="Internal id" source="internal_id"/>,
+    // <DateInput label="Sampled after" source="sampled_at_end@gte" alwaysOn />,
+    // <TextInput label="Sampled at start" source="sampled_at_start@eq" />,
+    // <DateInput label="Sampled before" source="sampled_at_start@lte" alwaysOn />,
 //    <TextInput label="Sampler" source="sampler_names@cs"/>, // Needs to put {} around names
-    <TextInput label="Taxon Key" source="key@ilike" />,
+    <TextInput label="Taxon internal ID" source="taxon_internal_id@eq" />,
+    <TextInput label="Determiner" source="determined_by_name@eq" />,
     <AutocompleteArrayInput label="Data source" source="source" choices={[
-        { id: 'LUXNAT', name: 'Luxnat' },
-        { id: 'INAT', name: 'iNaturalist' },
-        { id: 'DATA', name: 'data.mnhn.lu' },
-        { id: 'CAL', name: 'Centrale ornithologique' },
+        { id: 'recorder', name: 'Recorder' },
+        { id: 'inaturalist', name: 'iNaturalist' },
     ]} />
 ];
 
@@ -99,8 +98,8 @@ export const ObservationList = () => {
 // This is separated so we can use useListContext
 const InsideList = () => {
     const include = useMapState();
-    const includeSubtaxa = useMapState();  // A map TaxonId -> includeSubtaxa
-    const includeSynonyms = useMapState() // A map TaxonId -> includeSynonyms
+    const [includeSubtaxa, setIncludeSubtaxa] = React.useState(true);
+    const [includeSynonyms, setIncludeSynonyms] = React.useState(true);
     const [selectedTaxa, setSelectedTaxa] = React.useState([]); // The list of Taxon API objects currently selected
 
     const [viewState, setViewState] = React.useState({
@@ -124,7 +123,7 @@ const InsideList = () => {
             } else if (geo.type === 'Point') {
                 center = geo['coordinates'];
             }
-            setHighlighted(record.external_id);
+            setHighlighted(record.internal_id);
             mapRef.current?.flyTo({center: center, duration: 800});
         }
     });
@@ -151,7 +150,7 @@ const InsideList = () => {
         }
     );
 
-    console.log(mapData);
+    // console.log(mapData);
     
     return (
 	<Stack sx={{height: "100%"}}>
@@ -187,15 +186,18 @@ const InsideList = () => {
 		<FunctionField label="Taxon"
  			       render={(r) => <TaxonItem taxon={r}
  							 displayOnly={true} />} />
-		<FunctionField label="Samplers" render={(r) => r.sampler_names?.join(', ')} />
-		<DateField label="Sampled at start" source="sampled_at_start" />
-		<DateField label="Sampled at end"source="sampled_at_end" />
+		<FunctionField label="Entered by" render={(r) => r.entered_name} />
+		<FunctionField label="Determined by" render={(r) => r.determined_name} />
 		<TextField source="source" />
 	    </Datagrid>
 	</Stack>
     );
 }
-			
+
+//		 <DateField label="Entered" source={(r) => r.entered_at} />
+//		 <DateField label="Sampled at end" source="sampled_at" />
+
+
 function parseTimestampRange(range) {
     const re = '\\["(.*)","(.*)"\\)';
     const [_, from, to] =  range.match(re);

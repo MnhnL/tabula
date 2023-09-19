@@ -17,13 +17,12 @@ import _ from 'lodash';
 
 export const TaxonItem = ({taxon,
 			   includeTaxon,
-			   includeSubtaxa,
-			   includeSynonyms,
 			   onDelete,
 			   displayOnly = false,
 			   ...props}) => {
-    const {key, taxon_name, authority, taxon_rank,
-	   kng_name, div_name, phyl_name, cla_name, ord_name, fam_name, gen_name} = taxon;
+    const {internal_id, taxon_name, authority, taxon_rank,
+	   kingdom_name, division_name, phylum_name, class_name, order_name, family_name, genus_name,
+	   source} = taxon;
 
     let include = true;
 
@@ -32,18 +31,18 @@ export const TaxonItem = ({taxon,
     
     // in the list
     if (!displayOnly) {
-        include = includeTaxon.state.get(taxon.key);
+        include = includeTaxon.state.get(taxon.internal_id);
 
 	secondaryAction = <IconButton onClick={(e) => onDelete(e, taxon)}><ClearIcon /></IconButton>;
-	includeExcludeButton = <IconButton onClick={(e) => includeTaxon.set(key, !include)}>{include ? <AddCircleOutlineIcon /> : <RemoveCircleOutlineIcon /> }</IconButton>;
+	includeExcludeButton = <IconButton onClick={(e) => includeTaxon.set(internal_id, !include)}>{include ? <AddCircleOutlineIcon /> : <RemoveCircleOutlineIcon /> }</IconButton>;
     }
 
-    const path = [kng_name, div_name, phyl_name, cla_name,
-		  ord_name, fam_name, gen_name].filter(t => !!t).join(" > ");
+    const path = [kingdom_name, division_name, phylum_name, class_name,
+		  order_name, family_name, genus_name].filter(t => !!t).join(" > ");
     
     return (
 	<MuiListItem {...props}
-		     key={key}
+		     key={internal_id}
 		     secondaryAction={secondaryAction}
 		     sx={{backgroundColor: include ? null: 'yellow', m: 0, paddingLeft: 0, paddingTop: 0, paddingBottom: 0}}>
 	    { includeExcludeButton }
@@ -59,23 +58,8 @@ export const TaxonItem = ({taxon,
 		</Box>
 		&nbsp;{authority}&nbsp;
 		<Chip label={taxon_rank} variant="outlined" size="small"/>
+		<Chip label={source} variant="outlined" color="info" size="small"/>
 	    </MuiListItemText>
-	    { !displayOnly &&
-	      <FormGroup>
-		  <FormControlLabel
-		      control={
-			  <Switch size="small"
-				  checked={includeSubtaxa.state.get(key)}
-				  onChange={(e) => includeSubtaxa.set(key, !includeSubtaxa.state.get(key))} />}
-		      label="Subtaxa" />
-		  <FormControlLabel
-		      control={
-			  <Switch size="small"
-				  checked={includeSynonyms.state.get(key)}
-				  onChange={(e) => includeSynonyms.set(key, !includeSynonyms.state.get(key))}/>}
-		      label="Synonyms" />
-	      </FormGroup>
-	    }
 	</MuiListItem>
     );
 }
@@ -92,18 +76,37 @@ export const TaxonFilter = ({selectedTaxa, setSelectedTaxa,
     const fetchOptions = React.useMemo(
 	() => _.throttle(
             (request, callback ) => {
-		fetch(`http://potato.hisnat.local:3000/rpc/taxon_suggest?query=${request.input}`).then((response) => {
+		fetch(`http://potato.hisnat.local:3000/rpc/taxon_suggest?query=${request.input}&query_source=col`).then((response) => {
 		    if (!response.ok) {
-			console.error("Could not fetch from Taxa API");
+			console.error("Could not fetch from taxon_suggest API");
 		    } else {
-			response.json().then((json) => {
-			    callback(json)
-			});
+			response.json().then((json) => { callback(json) });
 		    }
 		});
-            }, 500),
+            }, 900),
 	[]
     );
+
+    const fetchEquivalent = 
+        (request, callback ) => {
+	    const requests = request.selectedTaxa.map(t => fetch(`http://potato.hisnat.local:3000/rpc/taxon_equivalent?q_internal_id=${t.internal_id}&q_preferred_internal_id=${t.preferred_internal_id}&q_rank=${t.taxon_rank}&include_children=${includeSubtaxa}&include_synonyms_and_preferred=${includeSynonyms}`));
+
+	    Promise.all(requests)
+		.then((responses) => {
+		    const errors = responses.filter(r => !r.ok);
+		    if (errors.length > 0) {
+			throw errors.map(r => Error(r.statusText));
+		    }
+		    const jsons = responses.map(r => r.json());
+		    return Promise.all(jsons);
+		})
+		.then(jsons => {
+		    callback(jsons);
+		})
+		.catch(errors => {
+		    console.error("Could not fetch from taxon_equivalent API", errors);
+		});
+	};
 
     // Applies taxon filters based on state mentionned below
     React.useEffect(() => {
@@ -126,74 +129,41 @@ export const TaxonFilter = ({selectedTaxa, setSelectedTaxa,
 	};
     }, [value, inputValue, fetchOptions]);
 
+    const joinList = (l) => "(" + l.join(",") + ")";
+
     // Add to filters the values in selectedTaxa
     React.useEffect(() => {
-	const joinList = (l) => "(" + l.join(",") + ")";
-
+	// Make sure that filters not related to taxonomy are not touched
 	var filterValuesDup = Object.assign({}, filterValues);
-	const newFilters = {};
+	delete filterValuesDup['taxon_internal_id@in'];
+	let newFilters = {};
 
-	// Remove old taxon filters
-	const filterIdPrefixes = [
-	    'key',
-	    'kng_key', 'div_key', 'phyl_key',
-	    'cla_key', 'ord_key', 'fam_key',
-	    'gen_key', 'spp_key'];
+	if (selectedTaxa.length > 0) {
+	    // Look up all taxon iids that are equivalent to the ones selected in selectedTaxa
+	    fetchEquivalent(
+		{
+		    selectedTaxa
+		},
+		(nestedResults) => {
+		    // We get a list of ids for each taxon in taxon selection widget
+		    let taxonIids = [];
+		    nestedResults.forEach(results => {
+			taxonIids.push(results.map(r => r.internal_id));
+		    });
+		    
+		    const rightHandSide = joinList(taxonIids);
+		    newFilters = {'taxon_internal_id@in': rightHandSide};
 
-	for (let filterIdPrefix of filterIdPrefixes) {
-	    delete filterValuesDup[`${filterIdPrefix}@in`];
-	    delete filterValuesDup[`${filterIdPrefix}@not.in`];
-	    delete filterValuesDup[`preferred_${filterIdPrefix}@in`];
-	    delete filterValuesDup[`preferred_${filterIdPrefix}@not.in`];
+		    const effectiveFilters = {...filterValuesDup, ...newFilters};
+		    setFilters(effectiveFilters);
+		}
+	    );
+	} else {
+	    const effectiveFilters = {...filterValuesDup, ...newFilters};
+	    setFilters(effectiveFilters);
 	}
 
-	// Set all filters using index arrays
-	for (let st of selectedTaxa) {
-	    let id = st.key;
-
-	    // The one we filter for
-	    let targetId;
-	    if (includeSynonyms.state.get(id)) {
-		targetId = st.preferred_key;
-	    } else {
-		targetId = st.key;
-	    }
-	    
-	    const rank = st.taxon_rank;
-
-	    let filterIdPrefix;
-	    if (includeSubtaxa.state.get(id)) {
-		filterIdPrefix = `${rank}_key`;
-	    } else {
-		filterIdPrefix = 'key';
-	    }
-
-	    // Search via preferred_${rank}_key or preferred_key
-	    if (includeSynonyms.state.get(id)) {
-		filterIdPrefix = 'preferred_' + filterIdPrefix;
-	    }
-
-	    const filterIdOperator = include.state.get(id) ? 'in' : 'not.in';
-
-	    const filterId = `${filterIdPrefix}@${filterIdOperator}`;
-
-	    // Push taxon id into relevant filter, (maybe create new one)
-	    if (!(filterId in newFilters)) {
-		newFilters[filterId] = [];
-	    }
-	    newFilters[filterId].push(targetId);
-	}
-
-	// Translate into format usable by API
-	for (let filterId in newFilters) {
-	    newFilters[filterId] = joinList(newFilters[filterId]);
-	}
-
-	const effectiveFilters = {...filterValuesDup, ...newFilters}
-
-	setFilters(effectiveFilters);
-    }, [include.state, includeSubtaxa.state, includeSynonyms.state,
-	selectedTaxa]);
+    }, [include.state, selectedTaxa]);
     
     return (
 	<Stack style={{minWidth: "30em"}}>
@@ -210,10 +180,8 @@ export const TaxonFilter = ({selectedTaxa, setSelectedTaxa,
 		    setValue(null);
 
 		    // Set options
-		    const key = newSelectedTaxon.key;
-		    include.set(key, !include.state.get(key));
-		    includeSubtaxa.set(key, true);
-		    includeSynonyms.set(key, true);
+		    const iid = newSelectedTaxon.internal_id;
+		    include.set(iid, !include.state.get(iid));
 
 		    // Append taxon object returend from API to selected taxa list
 		    const newSelectedTaxa = selectedTaxa.concat([newSelectedTaxon])
@@ -223,7 +191,7 @@ export const TaxonFilter = ({selectedTaxa, setSelectedTaxa,
 		    return (<TaxonItem {...props}
 				       taxon={t}
 				       dense={true}
-				       key={t.key}
+				       key={t.internal_id}
 				       includeTaxon={include}
 				       displayOnly={true} />
 			   );
@@ -238,15 +206,13 @@ export const TaxonFilter = ({selectedTaxa, setSelectedTaxa,
 		    return (
 			<TaxonItem taxon={t}
 				   dense={true}
-				   key={t.key}
+				   key={t.internal_id}
 				   includeTaxon={include}
-				   includeSubtaxa={includeSubtaxa}
-				   includeSynonyms={includeSynonyms}
-				   onDelete={(e, t_del) => setSelectedTaxa(selectedTaxa.filter((t) => t.key !== t_del.key))}
+				   onDelete={(e, t_del) => setSelectedTaxa(selectedTaxa.filter((t) => t.internal_id !== t_del.internal_id))}
 			           displayOnly={false}/>
 		    );
 		})}
 	    </MuiList>
-	     </Stack>
+	  </Stack>
     );
 }
