@@ -114,17 +114,46 @@ const InsideList = () => {
     const [featureCount, setFeatureCount] = React.useState('page');
     const [displayType, setDisplayType] = React.useState('centroid');
 
+    function boundingBox(geo) {
+	let min0 = 100, max0 = -100, min1 = 100, max1 = -100;
+	for (let p of geo['coordinates'][0]) {
+	    if (p[0] < min0) min0 = p[0];
+	    if (p[0] > max0) max0 = p[0];
+	}
+	for (let p of geo['coordinates'][0]) {
+	    if (p[1] < min1) min1 = p[1];
+	    if (p[1] > max1) max1 = p[1];
+	}
+	return [min0, max0, min1, max1];
+    }
+
+    function latitudeToZoom(lat) {
+	if (lat < 0.0001)
+	    return 19;
+	if (lat < 0.001)
+	    return 16;
+	if (lat < 0.01)
+	    return 15;
+	if (lat < 0.05)
+	    return 13;
+	else
+	    return 12;
+    }
+    
     const postRowClick = React.useCallback((record) => {
         if (getGeography(displayType, record)) {
             const geo = parse(getGeography(displayType, record));
-            let center;
+            let center, zoom = 15;
             if (geo.type === 'Polygon') {
-                center = geo['coordinates'][0][0];
+		const bb = boundingBox(geo);
+		center = [(bb[0] + bb[1]) / 2.0, (bb[2] + bb[3]) / 2.0];
+		console.log(bb[1]-bb[0]);
+		zoom = latitudeToZoom(bb[1]-bb[0]);
             } else if (geo.type === 'Point') {
                 center = geo['coordinates'];
             }
             setHighlighted(record.internal_id);
-            mapRef.current?.flyTo({center: center, duration: 800});
+            mapRef.current?.flyTo({center: center, duration: 800, zoom});
         }
     });
 
@@ -150,8 +179,6 @@ const InsideList = () => {
         }
     );
 
-    // console.log(mapData);
-    
     return (
 	<Stack sx={{height: "100%"}}>
 	    <Stack spacing={2}>
@@ -188,6 +215,8 @@ const InsideList = () => {
  							 displayOnly={true} />} />
 		<FunctionField label="Entered by" render={(r) => r.entered_by_name} />
 		<FunctionField label="Determined by" render={(r) => r.determined_by_name} />
+		<FunctionField label="Entered" render={(r) => parseTimestampRange(r.entered_at)[0]} />
+		<FunctionField label="Determined" render={(r) => parseTimestampRange(r.determined_at)[0]} />
 		<TextField source="source" />
 	    </Datagrid>
 	</Stack>
@@ -200,8 +229,15 @@ const InsideList = () => {
 
 function parseTimestampRange(range) {
     const re = '\\["(.*)","(.*)"\\)';
-    const [_, from, to] =  range.match(re);
-    return [new Date(from), new Date(to)];
+    if (range) {
+	const res = range.match(re);
+	if (res) {
+	    const [_, from, to] =  res;
+	    return [new Date(from), new Date(to)].map(d => d.toString());
+	}
+    }
+
+    return ["n/a", "n/a"];
 }
 
 
