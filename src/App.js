@@ -20,71 +20,61 @@ const theme = {
     spacing: 2,
     components: {
 	...defaultTheme.components,
-	// MuiButton: {
-	//     defaultProps: {
-	// 	size: 'small',
-	//     },
-	// },
-	// MuiFilledInput: {
-	//     defaultProps: {
-	// 	margin: 'dense',
-	//     },
-	// },
-	// MuiFormControl: {
-	//     defaultProps: {
-	// 	margin: 'dense',
-	//     },
-	// },
-	// MuiFormHelperText: {
-	//     defaultProps: {
-	// 	margin: 'dense',
-	//     },
-	// },
-	// MuiIconButton: {
-	//     defaultProps: {
-	// 	size: 'small',
-	//     },
-	// },
-	// MuiInputBase: {
-	//     defaultProps: {
-	// 	margin: 'dense',
-	//     },
-	// },	
-	// MuiInputLabel: {
-	//     defaultProps: {
-	// 	margin: 'dense',
-	//     },
-	// },
-	// MuiListItem: {
-	//     defaultProps: {
-	// 	dense: true,
-	//     },
-	// },
-	// MuiOutlinedInput: {
-	//     defaultProps: {
-	// 	margin: 'dense',
-	//     },
-	// },
-	// MuiFab: {
-	//     defaultProps: {
-	// 	size: 'small',
-	//     },
-	// },
-	// MuiTable: {
-	//     defaultProps: {
-	// 	size: 'small',
-	//     },
-	// },
-	// MuiTextField: {
-	//     defaultProps: {
-	// 	margin: 'dense',
-	//     },
-	// },
-	// MuiToolbar: {
-	//     defaultProps: {
-	// 	variant: 'dense',
-	//     },
-	// },
+	MuiButton: {
+	    defaultProps: {
+		size: 'small',
+	    },
+	},
+	MuiFilledInput: {
+	    defaultProps: {
+		margin: 'dense',
+	    },
+	},
+	MuiFormControl: {
+	    defaultProps: {
+		margin: 'dense',
+	    },
+	},
+	MuiFormHelperText: {
+	    defaultProps: {
+		margin: 'dense',
+	    },
+	},
+	MuiIconButton: {
+	    defaultProps: {
+		size: 'small',
+	    },
+	},
+	MuiInputBase: {
+	    defaultProps: {
+		margin: 'dense',
+	    },
+	},	
+	MuiInputLabel: {
+	    defaultProps: {
+		margin: 'dense',
+	    },
+	},
+	MuiListItem: {
+	    defaultProps: {
+		dense: true,
+	    },
+	},
+	MuiOutlinedInput: {
+	    defaultProps: {
+		margin: 'dense',
+	    },
+	},
+	MuiFab: {
+	    defaultProps: {
+		size: 'small',
+	    },
+	},
+	MuiTable: {
+	    defaultProps: {
+		size: 'small',
+	    },
+	},
     },
 };
 
@@ -92,18 +82,27 @@ const initialState = {
     admin: { ui: { sidebarOpen: false, viewVersion: 0 } }
 };
 
+const fetchJson = (url, options) => {
+    options['headers'] = new Headers({
+	'Prefer': 'count=exact' // planned & exact
+    });
+    return fetchUtils.fetchJson(url, options);
+}
+
+const dp = dataProvider(process.env.REACT_APP_API_URL,
+                        fetchJson,
+                        'eq',
+                        new Map([['rpc/observation_flat', ['internal_id']],
+				 ['taxon_flat', ['internal_id']],
+                                 ['individual', ['internal_id']]]));
+
 function App() {
     return (
         <Admin title="MNHN Tabula - "
                layout={MyLayout}
 	       theme={theme}
                initialState={initialState}
-               dataProvider={dataProvider(process.env.REACT_APP_API_URL,
-                                          fetchUtils.fetchJson,
-                                          'eq',
-                                          new Map([['rpc/observation_flat', ['internal_id']],
-						   ['taxon_flat', ['internal_id']],
-                                                   ['individual', ['internal_id']]]))}
+               dataProvider={dp}
                disableTelemetry>
           <Resource name="rpc/observation_flat"
                     list={ObservationList}
