@@ -86,6 +86,7 @@ export const ObservationList = () => {
 	<List filters={filters}
 	      pagination={<ObservationPagination />}
 	      component={wrapper}
+	      sort={{field: 'entered_at_upper', order: 'DESC'}}
 	      sx={{height: "100%",
 		   width: "100%",
 		   marginLeft: 10,
