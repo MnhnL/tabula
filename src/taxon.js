@@ -83,7 +83,7 @@ export const TaxonFilter = ({selectedTaxa, setSelectedTaxa,
 			response.json().then((json) => { callback(json) });
 		    }
 		});
-            }, 1500),
+            }, 200),
 	[]
     );
 
