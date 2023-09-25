@@ -139,12 +139,14 @@ export const TaxonFilter = ({selectedTaxa, setSelectedTaxa,
 	let newFilters = {};
 
 	if (selectedTaxa.length > 0) {
-	    const rightHandSide = joinList(selectedTaxa.map(r => r.internal_id));
+	    const rightHandSide = joinList(selectedTaxa.map(r => r.preferred_internal_id));
 	    newFilters = {'taxon_internal_ids@': rightHandSide};
 	}
 	const effectiveFilters = {...filterValuesDup, ...newFilters};
-	setFilters(effectiveFilters);
 
+	if (!_.isEqual(filterValues, effectiveFilters)) {
+	    setFilters(effectiveFilters);
+	}
     }, [include.state, selectedTaxa]);
     
     return (
