@@ -1,9 +1,7 @@
 import * as React from 'react';
-import { Datagrid, DateField, List, TextField,
+import { Datagrid, DateField, List, TextField, Pagination, InfiniteList,
          SelectInput, TextInput, DateInput, AutocompleteArrayInput,
-         FunctionField, useListContext, useTranslate } from 'react-admin';
-import { Pagination } from 'react-admin';
-import { useGetList } from 'react-admin';
+         FunctionField, useListContext, useTranslate, useGetList } from 'react-admin';
 
 import { Stack, Grid, Card, Chip, CircularProgress, Box } from '@mui/material';
 
@@ -15,11 +13,6 @@ import { ListWrapper } from './util.js'
 
 import { parse } from 'wkt';
 import { format }  from 'date-fns';
-
-// const QuickFilter = ({ label }) => {
-//     const translate = useTranslate();
-//     return <Chip sx={{ marginBottom: 1 }} label={translate(label)} />;
-// };
 
 const filters = [
     <TextInput label="Internal id" source="internal_id"/>,
@@ -236,10 +229,6 @@ const InsideList = () => {
     );
 }
 
-//		 <DateField label="Entered" source={(r) => r.entered_at} />
-//		 <DateField label="Sampled at end" source="sampled_at" />
-
-
 function parseTimestampRange(range) {
     const re = '\\["(.*)","(.*)"\\)';
     if (range) {
@@ -252,79 +241,3 @@ function parseTimestampRange(range) {
 
     return ["n/a", "n/a"];
 }
-
-
-// import ReactDataGrid from '@inovua/reactdatagrid-community'
-// import '@inovua/reactdatagrid-community/index.css'
-// const RDG = ({onRowClick}) => {
-//     const columns = [
-// 	{ name: 'external_id', header: 'Id', defaultVisible: false, type: 'string', sortable: false },
-// 	{ header: 'Sampled at', render: (r) => parseTimestampRange(r.data.sampled_at)[0], type: 'string', sortable: false, defaultFlex: 1},
-// 	{ header: 'Samplers', render: (r) => r.data.sampler_names?.join(', '), sortable: false, defaultFlex: 1},
-// 	{ header: 'Taxon', render: (r) => <TaxonItem taxon={r.data} displayOnly={true} />, sortable: false, width: 500, defaultFlex: 2 },
-// 	{ name: 'source', header: 'Source', type: 'string' },
-//     ];
-
-//     const { data, isLoading } = useListContext();
-
-//     const getData = (args) => {
-// 	// FIXME: Use sortInfo.dir, sortInfo.id, sortInfo.name
-// 	return Promise.resolve(data);
-//     };
-    
-//     if (data) {
-// 	return (
-// 	    <ReactDataGrid loading={isLoading}
-// 			   nativeScroll={true}
-// 			   idProperty="external_id"
-// 			   columns={columns}
-// 			   dataSource={getData}
-// 			   onRowClick={id => onRowClick(data.find(d => d.exernal_id === id))}
-// 			   style={{height: "100%"}} />
-// 	);
-//     }
-// }
-
-
-// const MyTable = ({onRowClick}) => {
-//     const { data, isLoading } = useListContext();
-
-//     if (data && !isLoading) {
-// 	return (
-// 	    <div style={{overflowY: "scroll", width: "100%"}}>
-// 	    <table style={{width: "100%"}}>
-// 		<thead>
-// 		    <tr>
-// 			<th>id</th>
-// 			<th>taxon</th>
-// 			<th>sampled at</th>
-// 			<th>samplers</th>
-// 			<th>source</th>
-// 		    </tr>
-// 		</thead>
-// 		<tbody>
-// 		    { data.map( r =>
-// 			<tr onClick={e => onRowClick(data.find(d => d.external_id === r.external_id))}>
-// 			    <td>{r.external_id}</td>
-// 			    <td><TaxonItem taxon={r} displayOnly={true} /></td>
-// 			    <td>{format(parseTimestampRange(r.sampled_at)[0], 'yyyy / MM / dd')}</td>
-// 			    <td>{r.sampler_names?.join(', ')}</td>
-// 			    <td>{r.source}</td>
-// 			</tr>
-// 		    ) }
-// 		</tbody>
-// 	    </table>
-// 	    </div>
-// 	);
-//     }
-// }
-
-// <Datagrid rowClick={postRowClick}
-// 	  sx={{overflowY: "scroll"}}>
-//     <FunctionField label="Taxon"
-// 		   render={(r) => <TaxonItem taxon={r}
-// 					     displayOnly={true} />} />
-//     <FunctionField label="Samplers" render={(r) => r.sampler_names?.join(', ')} />
-//     <DateField source="sampled_at" />
-//     <TextField source="source" />
-// </Datagrid>
