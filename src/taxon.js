@@ -37,7 +37,7 @@ export const TaxonItem = ({taxon,
 	includeExcludeButton = <IconButton onClick={(e) => includeTaxon.set(internal_id, !include)}>{include ? <AddCircleOutlineIcon /> : <RemoveCircleOutlineIcon /> }</IconButton>;
     }
 
-    const path = [kingdom_name, division_name, phylum_name, class_name,
+    const path = [kingdom_name, phylum_name, class_name,
 		  order_name, family_name, genus_name].filter(t => !!t).join(" > ");
     
     return (
@@ -83,7 +83,7 @@ export const TaxonFilter = ({selectedTaxa, setSelectedTaxa,
 			response.json().then((json) => { callback(json) });
 		    }
 		});
-            }, 900),
+            }, 1500),
 	[]
     );
 
@@ -129,39 +129,21 @@ export const TaxonFilter = ({selectedTaxa, setSelectedTaxa,
 	};
     }, [value, inputValue, fetchOptions]);
 
-    const joinList = (l) => "(" + l.join(",") + ")";
+    const joinList = (l) => "{" + l.join(",") + "}";
 
     // Add to filters the values in selectedTaxa
     React.useEffect(() => {
 	// Make sure that filters not related to taxonomy are not touched
 	var filterValuesDup = Object.assign({}, filterValues);
-	delete filterValuesDup['taxon_internal_id@in'];
+	delete filterValuesDup['taxon_internal_ids@'];
 	let newFilters = {};
 
 	if (selectedTaxa.length > 0) {
-	    // Look up all taxon iids that are equivalent to the ones selected in selectedTaxa
-	    fetchEquivalent(
-		{
-		    selectedTaxa
-		},
-		(nestedResults) => {
-		    // We get a list of ids for each taxon in taxon selection widget
-		    let taxonIids = [];
-		    nestedResults.forEach(results => {
-			taxonIids.push(results.map(r => r.internal_id));
-		    });
-		    
-		    const rightHandSide = joinList(taxonIids);
-		    newFilters = {'taxon_internal_id@in': rightHandSide};
-
-		    const effectiveFilters = {...filterValuesDup, ...newFilters};
-		    setFilters(effectiveFilters);
-		}
-	    );
-	} else {
-	    const effectiveFilters = {...filterValuesDup, ...newFilters};
-	    setFilters(effectiveFilters);
+	    const rightHandSide = joinList(selectedTaxa.map(r => r.internal_id));
+	    newFilters = {'taxon_internal_ids@': rightHandSide};
 	}
+	const effectiveFilters = {...filterValuesDup, ...newFilters};
+	setFilters(effectiveFilters);
 
     }, [include.state, selectedTaxa]);
     
@@ -173,7 +155,11 @@ export const TaxonFilter = ({selectedTaxa, setSelectedTaxa,
 		autoComplete
 		value={value}
 		renderInput={(params) => <MuiTextField {...params} label="Find Taxon" variant="outlined" size="small" fullWidth />}
-		onInputChange={(event, newInputValue) => setInputValue(newInputValue)}
+		onInputChange={(event, newInputValue) => {
+		    if (newInputValue.length >= 3) {
+			setInputValue(newInputValue);
+		    }
+		}}
 		onChange={(ev, newSelectedTaxon) => {
 		    setOptions([]);
 		    setInputValue('');

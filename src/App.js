@@ -101,15 +101,15 @@ function App() {
                dataProvider={dataProvider(process.env.REACT_APP_API_URL,
                                           fetchUtils.fetchJson,
                                           'eq',
-                                          new Map([['observation_flat', ['internal_id']],
-                                                   ['individual', ['name_key']],
-                                                   ['taxon', ['key']]]))}
+                                          new Map([['rpc/observation_flat', ['internal_id']],
+						   ['taxon_flat', ['internal_id']],
+                                                   ['individual', ['internal_id']]]))}
                disableTelemetry>
-          <Resource name="observation_flat"
+          <Resource name="rpc/observation_flat"
                     list={ObservationList}
                     icon={SpaIcon}
                     options={{label: 'Observations'}} />
-          <Resource name="taxon"
+          <Resource name="taxon_flat"
                     list={TaxaList}
                     icon={AccountTreeIcon}
                     options={{label: 'Taxa'}} />

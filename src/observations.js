@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { Datagrid, DateField, List, TextField,
-         TextInput, DateInput, AutocompleteArrayInput,
+         SelectInput, TextInput, DateInput, AutocompleteArrayInput,
          FunctionField, useListContext, useTranslate } from 'react-admin';
 import { Pagination } from 'react-admin';
 import { useGetList } from 'react-admin';
@@ -23,16 +23,18 @@ import { format }  from 'date-fns';
 
 const filters = [
     <TextInput label="Internal id" source="internal_id"/>,
-    // <DateInput label="Sampled after" source="sampled_at_end@gte" alwaysOn />,
-    // <TextInput label="Sampled at start" source="sampled_at_start@eq" />,
-    // <DateInput label="Sampled before" source="sampled_at_start@lte" alwaysOn />,
-//    <TextInput label="Sampler" source="sampler_names@cs"/>, // Needs to put {} around names
-    <TextInput label="Taxon internal ID" source="taxon_internal_id@eq" />,
+    <DateInput label="Entered after" source="entered_at_upper@gte" alwaysOn />,
+    <DateInput label="Entered before" source="entered_at_upper@lte" />,
+    <DateInput label="Determined after" source="determined_at_upper@gte" alwaysOn />,
+    <DateInput label="Determined before" source="determined_at_upper@lte" />,
     <TextInput label="Determiner" source="determined_by_name@eq" />,
-    <AutocompleteArrayInput label="Data source" source="source" choices={[
+    <TextInput label="Taxon internal ID" source="taxon_internal_id@eq" />,
+    <TextInput label="Taxon preferred internal ID" source="taxon_preferred_internal_id@eq" />,
+    
+    <SelectInput label="Data source" source="source" choices={[
         { id: 'recorder', name: 'Recorder' },
         { id: 'inaturalist', name: 'iNaturalist' },
-    ]} />
+    ]} alwaysOn />,
 ];
 
 const ObservationPagination =
@@ -224,9 +226,9 @@ const InsideList = () => {
  							   displayOnly={true} />} />
 		  <FunctionField label="Entered by" render={(r) => r.entered_by_name} />
 		  <FunctionField label="Determined by" render={(r) => r.determined_by_name} />
-		  <FunctionField label="Entered" render={(r) => parseTimestampRange(r.entered_at)[0]} />
-		  <FunctionField label="Determined" render={(r) => parseTimestampRange(r.determined_at)[0]} />
-		  <FunctionField label="Location" render={r => r.geography ? "✓" : "❌"} />
+		  <DateField label="Entered at" source="entered_at_upper" />
+		  <DateField label="Determined at" source="determined_at_upper" />
+		  <FunctionField label="Location" render={r => r.location_geography ? "✓" : "❌"} />
 		  <TextField source="source" />
 	      </Datagrid>
 	    }

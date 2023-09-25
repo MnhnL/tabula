@@ -3,10 +3,10 @@ import { Datagrid, List, TextField, TextInput } from 'react-admin';
 import { ListWrapper } from './util.js'
 
 const filters = [
-	<TextInput label="Name key" source="name_key@like" alwaysOn />,
-	<TextInput label="Title" source="title@like" alwaysOn />,
-	<TextInput label="First Name" source="first_name@like" alwaysOn />,
-	<TextInput label="Last Name" source="last_name@like" alwaysOn />,
+	<TextInput label="Internal id" source="internal_id@eq" alwaysOn />,
+	<TextInput label="Title" source="title@ilike" alwaysOn />,
+	<TextInput label="Name" source="name@ilike" alwaysOn />,
+    	<TextInput label="Source" source="source@eq" alwaysOn />,
 ];
 
 export const IndividualsList = () => (
@@ -14,10 +14,11 @@ export const IndividualsList = () => (
           component={ListWrapper}
           sx={{width: "100%"}} >
       <Datagrid>
-        <TextField source="name_key" />
+        <TextField source="internal_id" />
         <TextField source="title" />
-        <TextField source="first_name" />
-        <TextField source="last_name" />
+        <TextField source="name" />
+	<TextField source="username" />
+	<TextField source="source" />
       </Datagrid>
     </List>
 );

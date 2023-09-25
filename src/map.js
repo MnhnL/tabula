@@ -39,9 +39,9 @@ export const pointLayer = {
 
 export function getGeography(displayType, record) {
     if (displayType === 'polygon') {
-	return record.geography;
+	return record.location_geography;
     } else {
-	return record.geography;
+	return record.location_geography_centroid;
     }
 }
 

@@ -1,14 +1,16 @@
-import { Datagrid, List, TextField, TextInput } from 'react-admin';
-import { Card } from '@mui/material';
+import { Datagrid, List, TextField, TextInput, FunctionField,
+         useListContext} from 'react-admin';
+import { Card, CircularProgress, Box } from '@mui/material';
 
 import { ListWrapper } from './util.js'
 import { mkReferenceInput } from './filters.js';
 
 const filters = [
 	<TextInput label="Internal ID" source="internal_id@eq" alwaysOn />,
-	<TextInput label="Taxon Name" source="taxon_name@ilike" alwaysOn />,
-	<TextInput label="Rank" source="taxon_rank@ilike" alwaysOn />,
-	<TextInput label="Authority" source="taxon_authority@ilike" alwaysOn/>,
+	<TextInput label="Name" source="name@ilike" alwaysOn />,
+	<TextInput label="Rank" source="rank@eq" alwaysOn />,
+	<TextInput label="Authority" source="authority@ilike" alwaysOn/>,
+    	<TextInput label="Source" source="source@eq" alwaysOn/>,
 
         <TextInput label="Parent internal ID" source="parent_internal_id@eq" />,
         <TextInput label="Preferred internal ID" source="preferred_internal_id@eq" />,
@@ -23,17 +25,33 @@ const filters = [
 
 const wrapper = (props) => (<Card style={{height: "100%", overflowY: "scroll"}}>{props.children}</Card>);
 
-export const TaxaList = () => (
-    <List filters={filters}
-          component={ListWrapper}
-          sx={{width: "100%"}} >
-      <Datagrid>
-        <TextField source="internal_id" />
-	<TextField source="parent_internal_id" />
-	<TextField source="preferred_internal_id" />
-        <TextField source="taxon_name" />
-        <TextField source="taxon_rank" />
-        <TextField source="taxon_authority" />
-      </Datagrid>
-    </List>
-);
+export const TaxaList = () => {
+    const {
+	isFetching,
+    } = useListContext();
+    
+    return <List filters={filters}
+		 component={ListWrapper}
+		 sx={{width: "100%"}} >
+	       { isFetching ?
+		 <Box sx={{ display: 'flex',
+			    justifyContent: 'center',
+			    alignItems: 'center',
+			    height: '100%'}}>
+		     <CircularProgress/>
+		 </Box> : 
+		 <Datagrid>
+		     <TextField source="internal_id" />
+		     <TextField source="parent_internal_id" />
+		     <TextField source="preferred_internal_id" />
+		     <TextField source="name" />
+		     <TextField source="rank" />
+		     <TextField source="authority" />
+		     <TextField source="language" />
+		     <TextField source="source" />
+		     <FunctionField label="Taxonomy"
+				    render={t => ['kingdom', 'phylum', 'class', 'order', 'family', 'genus'].map(col => t.name_paths[col+'_name']).join(' > ')} />
+		 </Datagrid>
+	       }
+	   </List>
+};
