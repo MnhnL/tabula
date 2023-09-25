@@ -5,7 +5,7 @@ import { Datagrid, DateField, List, TextField,
 import { Pagination } from 'react-admin';
 import { useGetList } from 'react-admin';
 
-import { Stack, Grid, Card, Chip } from '@mui/material';
+import { Stack, Grid, Card, Chip, CircularProgress, Box } from '@mui/material';
 
 import { useMapState } from 'react-use-object-state';
 
@@ -159,6 +159,7 @@ const InsideList = () => {
 
     const {
 	data,
+	isFetching,
         sort, // a sort object { field, order }, e.g. { field: 'date', order: 'DESC' }
         resource, // the resource name, deduced from the location. e.g. 'posts'
 	page, // Current page
@@ -208,17 +209,26 @@ const InsideList = () => {
 				displayType={displayType} />
 		</Stack>
 	    </Stack>
-	    <Datagrid rowClick={(id, resource, record) => postRowClick(record)}
-		      sx={{overflowY:"scroll"}}>
-		<FunctionField label="Taxon"
- 			       render={(r) => <TaxonItem taxon={r}
- 							 displayOnly={true} />} />
-		<FunctionField label="Entered by" render={(r) => r.entered_by_name} />
-		<FunctionField label="Determined by" render={(r) => r.determined_by_name} />
-		<FunctionField label="Entered" render={(r) => parseTimestampRange(r.entered_at)[0]} />
-		<FunctionField label="Determined" render={(r) => parseTimestampRange(r.determined_at)[0]} />
-		<TextField source="source" />
-	    </Datagrid>
+	    { isFetching ?
+	      <Box sx={{ display: 'flex',
+			 justifyContent: 'center',
+			 alignItems: 'center',
+			 height: '100%'}}>
+		  <CircularProgress/>
+	      </Box> : 
+	      <Datagrid rowClick={(id, resource, record) => postRowClick(record)}
+			sx={{overflowY:"scroll"}}>
+		  <FunctionField label="Taxon"
+ 				 render={(r) => <TaxonItem taxon={r}
+ 							   displayOnly={true} />} />
+		  <FunctionField label="Entered by" render={(r) => r.entered_by_name} />
+		  <FunctionField label="Determined by" render={(r) => r.determined_by_name} />
+		  <FunctionField label="Entered" render={(r) => parseTimestampRange(r.entered_at)[0]} />
+		  <FunctionField label="Determined" render={(r) => parseTimestampRange(r.determined_at)[0]} />
+		  <FunctionField label="Location" render={r => r.geography ? "✓" : "❌"} />
+		  <TextField source="source" />
+	      </Datagrid>
+	    }
 	</Stack>
     );
 }
